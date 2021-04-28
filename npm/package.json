@@ -1,0 +1,36 @@
+{
+  "name": "jo",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "postinstall": "node index.js install",
+    "preuninstall": "node index.js uninstall",
+    "build": "node_modules/babel-cli/bin/babel.js index.js --out-dir bin"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JonasNiestroj/jo.git"
+  },
+  "author": "Jonas Niestroj",
+  "license": "MIT",
+  "bin": {
+    "jo": "bin/jo"
+  },
+  "bugs": {
+    "url": "https://github.com/JonasNiestroj/jo/issues"
+  },
+  "homepage": "https://github.com/JonasNiestroj/jo#readme",
+  "dependencies": {
+    "mkdirp": "^1.0.4",
+    "node-fetch": "^2.6.1",
+    "request": "^2.88.2",
+    "tar": "^6.1.0"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0"
+  }
+}

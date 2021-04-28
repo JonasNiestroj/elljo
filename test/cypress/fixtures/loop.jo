@@ -1,0 +1,3 @@
+{{#loop pets as x}}
+    <p>{{x}}</p>
+{{/loop}}
