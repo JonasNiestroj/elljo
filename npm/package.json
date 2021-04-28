@@ -13,7 +13,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/JonasNiestroj/jo.git"
+    "url": "git+https://github.com/JonasNiestroj/elljo.git"
   },
   "author": "Jonas Niestroj",
   "license": "MIT",
@@ -21,9 +21,9 @@
     "jo": "bin/jo"
   },
   "bugs": {
-    "url": "https://github.com/JonasNiestroj/jo/issues"
+    "url": "https://github.com/JonasNiestroj/elljo/issues"
   },
-  "homepage": "https://github.com/JonasNiestroj/jo#readme",
+  "homepage": "https://github.com/JonasNiestroj/elljo#readme",
   "dependencies": {
     "mkdirp": "^1.0.4",
     "node-fetch": "^2.6.1",

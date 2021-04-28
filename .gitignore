@@ -106,3 +106,5 @@ dist
 *output.html
 
 .idea/*
+
+/npm/node_modules/
