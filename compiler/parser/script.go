@@ -9,8 +9,8 @@ import (
 
 var (
 	variables []string
-	assigns []*ast.AssignExpression
-	imports []*ast.ImportStatement
+	assigns   []*ast.AssignExpression
+	imports   []*ast.ImportStatement
 )
 
 func Spaces(count int) string {
@@ -75,11 +75,10 @@ func ReadScript(parserInstance *Parser, start int) ScriptSource {
 	}
 
 	for _, assignExpression := range assigns {
-		println(source[assignExpression.Index0():assignExpression.Index1()])
 		if identifier, ok := assignExpression.Left.(*ast.Identifier); ok && identifier != nil {
-			parserInstance.Template = parserInstance.Template[:assignExpression.Index1() + indexToAdd] + `;currentComponent.set({` + identifier.Name.String() + `}, "`+ identifier.Name.String() + `");` + parserInstance.Template[int(assignExpression.Index1()) + indexToAdd:]
-			indexToAdd += 30 + len(identifier.Name) * 2
-			parserInstance.Index += 30 + len(identifier.Name) * 2
+			parserInstance.Template = parserInstance.Template[:assignExpression.Index1()+indexToAdd] + `;currentComponent.set({` + identifier.Name.String() + `}, "` + identifier.Name.String() + `");` + parserInstance.Template[int(assignExpression.Index1())+indexToAdd:]
+			indexToAdd += 30 + len(identifier.Name)*2
+			parserInstance.Index += 30 + len(identifier.Name)*2
 		}
 	}
 
@@ -88,6 +87,6 @@ func ReadScript(parserInstance *Parser, start int) ScriptSource {
 		EndIndex:   parserInstance.Index,
 		Program:    program,
 		Variables:  variables,
-		Imports: importNames,
+		Imports:    importNames,
 	}
 }

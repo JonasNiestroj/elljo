@@ -20,16 +20,16 @@ func main() {
 	}
 
 	var parserInstance = parser.Parser{
-		Index: 0,
+		Index:    0,
 		Template: string(data),
-		Entries: []*parser.Entry{},
+		Entries:  []*parser.Entry{},
 	}
 
 	parserInstance.Parse()
 
 	var generatorInstance = generator.Generator{}
 
-	generated := generatorInstance.Generate(parserInstance, parserInstance.Template)
+	generated, sourcemap := generatorInstance.Generate(parserInstance, parserInstance.Template)
 
 	indexFile := os.Args[2]
 	index, err := ioutil.ReadFile(indexFile)
@@ -38,4 +38,8 @@ func main() {
 	}
 	output := strings.Replace(string(index), "{SCRIPT}", generated, 1)
 	ioutil.WriteFile(os.Args[3], []byte(output), 0644)
+
+	if len(os.Args) > 4 {
+		ioutil.WriteFile(os.Args[4], []byte(sourcemap), 0644)
+	}
 }

@@ -6,8 +6,7 @@ import (
 	"strings"
 )
 
-func (self * Generator) VisitElement(parser parser.Parser, children parser.Entry, current *Fragment) *Fragment {
-	println(current.Counters.Element)
+func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry, current *Fragment) *Fragment {
 	current.Counters.Element++
 	name := "element_" + strconv.Itoa(current.Counters.Element)
 
@@ -19,15 +18,15 @@ func (self * Generator) VisitElement(parser parser.Parser, children parser.Entry
 	}
 	if isComponent {
 		template := "$name$({target: $target$});"
-		variables := map[string]string {
-			"name": children.Name,
+		variables := map[string]string{
+			"name":   children.Name,
 			"target": current.Target,
 		}
 		current.InitStatements = append(current.InitStatements, self.BuildString(template, variables))
 	} else {
 		template := "var $name$ = document.createElement('$childrenName$');"
-		variables := map[string]string {
-			"name": name,
+		variables := map[string]string{
+			"name":         name,
 			"childrenName": strings.ReplaceAll(children.Name, "\n", ""),
 		}
 		createStatement := self.BuildString(template, variables)
@@ -47,11 +46,11 @@ func (self * Generator) VisitElement(parser parser.Parser, children parser.Entry
 							contextString += `var ` + context + ` = currentContext.` + context + `;`
 						}
 					}
-					variables := map[string]string {
-						"name": name,
-						"index": strconv.Itoa(attributeIndex),
-						"context": contextString,
-						"value": attribute.Value,
+					variables := map[string]string{
+						"name":          name,
+						"index":         strconv.Itoa(attributeIndex),
+						"context":       contextString,
+						"value":         attribute.Value,
 						"attributeName": attribute.Name,
 					}
 
@@ -64,10 +63,10 @@ func (self * Generator) VisitElement(parser parser.Parser, children parser.Entry
 					for _, variable := range parser.ScriptSource.Variables {
 						if variable == attribute.Value {
 							variableCreateStatement := `$name$.setAttribute("$attributeName$", $value$);`
-							variables := map[string]string {
-								"name": name,
+							variables := map[string]string{
+								"name":          name,
 								"attributeName": attribute.Name,
-								"value": attribute.Value,
+								"value":         attribute.Value,
 							}
 							createStatement += self.BuildString(variableCreateStatement, variables)
 							variableUpdateStatement := `if(dirtyInState.includes("$value")) {
@@ -91,10 +90,10 @@ func (self * Generator) VisitElement(parser parser.Parser, children parser.Entry
 							contextTemplate += `var ` + context + ` = currentContext.` + context + `;\n`
 						}
 					}
-					variables := map[string]string {
-						"context": contextTemplate,
+					variables := map[string]string{
+						"context":       contextTemplate,
 						"attributeName": attribute.Name,
-						"name": name,
+						"name":          name,
 					}
 					createStatement += self.BuildString(attributeCreateStatement, variables)
 				} else {
@@ -126,7 +125,7 @@ func (self * Generator) VisitElement(parser parser.Parser, children parser.Entry
 		UpdateStatments:    current.UpdateStatments,
 		UseAnchor:          current.UseAnchor,
 		Parent:             current,
-		IsComponent: 		isComponent,
+		IsComponent:        isComponent,
 	}
 }
 

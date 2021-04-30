@@ -12,13 +12,13 @@ func (self *Generator) VisitIf(children parser.Entry, current *Fragment) *Fragme
 	renderer := "renderIfBlock_" + strconv.Itoa(self.ifCounter)
 
 	template := `var $name$_anchor = document.createComment('#if $expression$');
-				$target.appendChild($name$_anchor);
+				$target$.appendChild($name$_anchor);
 				var $name$ = null`
 
-	variables := map[string]string {
-		"name": name,
+	variables := map[string]string{
+		"name":       name,
 		"expression": children.ExpressionSource,
-		"target": current.Target,
+		"target":     current.Target,
 	}
 
 	createStatement := self.BuildString(template, variables)
@@ -41,11 +41,11 @@ func (self *Generator) VisitIf(children parser.Entry, current *Fragment) *Fragme
 				$name$.update(context, dirtyInState, oldState);
 			}`
 
-			variables := map[string]string {
+			variables := map[string]string{
 				"variableName": variableName,
-				"name": name,
-				"renderer": renderer,
-				"target": current.Target,
+				"name":         name,
+				"renderer":     renderer,
+				"target":       current.Target,
 			}
 
 			current.UpdateStatments = append(current.UpdateStatments, self.BuildString(updateStatementTemplate, variables))

@@ -2,6 +2,7 @@ package generator
 
 import (
 	"elljo/compiler/parser"
+	"elljo/compiler/sourcemap"
 	"strings"
 )
 
@@ -22,7 +23,7 @@ type Fragment struct {
 	Counters           FragmentCounter
 	Parent             *Fragment
 	IsComponent        bool
-	HasContext 		   bool
+	HasContext         bool
 }
 
 type Generator struct {
@@ -62,7 +63,7 @@ func (self *Generator) Visit(parser parser.Parser, children parser.Entry, curren
 	}
 }
 
-func (self *Generator) Generate(parser parser.Parser, template string) string {
+func (self *Generator) Generate(parser parser.Parser, template string) (string, string) {
 	current := Fragment{
 		UseAnchor:          false,
 		Name:               "render",
@@ -82,8 +83,29 @@ func (self *Generator) Generate(parser parser.Parser, template string) string {
 		self.renderers[i], self.renderers[j] = self.renderers[j], self.renderers[i]
 	}
 
-	code := `var component = function(options) {
-		` + js + `; var currentComponent = null;` + strings.Join(self.renderers, "\n\n") +
+	linesTillJs := 0
+
+	for _, c := range template[0:parser.ScriptSource.StartIndex] {
+		if c == '\n' {
+			linesTillJs++
+		}
+	}
+
+	var values [][]int
+	for index, _ := range strings.Split(js, "\n") {
+		if index == len(strings.Split(js, "\n"))-1 {
+			break
+		}
+		lineIndex := linesTillJs + (index + 1)
+		// If the index is not the first one we just want to add 1
+		if index != 0 {
+			lineIndex = 1
+		}
+		values = append(values, []int{0, 0, lineIndex, 0})
+	}
+
+	code := `var component = function(options) {` + js +
+		`; var currentComponent = null;` + strings.Join(self.renderers, "\n\n") +
 		`
 			var component = {};
 			var state = {};
@@ -150,5 +172,5 @@ func (self *Generator) Generate(parser parser.Parser, template string) string {
 	}
 	export default component`
 
-	return code
+	return code, sourcemap.CreateSourcemap(values)
 }
