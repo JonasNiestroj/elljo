@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"elljo/compiler/generator"
 	"elljo/compiler/parser"
+	"encoding/json"
 	"os"
 	"strings"
 )
@@ -23,11 +24,16 @@ func RunService() {
 
 			generatorInstance := generator.Generator{}
 
-			generated, sourcemap := generatorInstance.Generate(parserInstance, parserInstance.Template)
+			generated := generatorInstance.Generate(parserInstance, parserInstance.Template)
 
-			output := generated + "$%&" + sourcemap
+			outputJson, err := json.Marshal(generated)
 
-			os.Stdout.Write([]byte(output))
+			if err != nil {
+				os.Stdout.Write([]byte(err.Error()))
+				panic(err)
+			}
+
+			os.Stdout.Write(outputJson)
 
 			break
 		}

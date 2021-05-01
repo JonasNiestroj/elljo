@@ -29,17 +29,17 @@ func main() {
 
 	var generatorInstance = generator.Generator{}
 
-	generated, sourcemap := generatorInstance.Generate(parserInstance, parserInstance.Template)
+	generated := generatorInstance.Generate(parserInstance, parserInstance.Template)
 
 	indexFile := os.Args[2]
 	index, err := ioutil.ReadFile(indexFile)
 	if err != nil {
 		panic(err)
 	}
-	output := strings.Replace(string(index), "{SCRIPT}", generated, 1)
+	output := strings.Replace(string(index), "{SCRIPT}", generated.Output, 1)
 	ioutil.WriteFile(os.Args[3], []byte(output), 0644)
 
 	if len(os.Args) > 4 {
-		ioutil.WriteFile(os.Args[4], []byte(sourcemap), 0644)
+		ioutil.WriteFile(os.Args[4], []byte(generated.Sourcemap), 0644)
 	}
 }

@@ -33,6 +33,11 @@ type Generator struct {
 	renderers   []string
 }
 
+type GeneratorOutput struct {
+	Output    string `json:"output"`
+	Sourcemap string `json:"sourcemap"`
+}
+
 func (self *Generator) Visit(parser parser.Parser, children parser.Entry, current *Fragment, template string) {
 	switch children.EntryType {
 	case "Element":
@@ -63,7 +68,7 @@ func (self *Generator) Visit(parser parser.Parser, children parser.Entry, curren
 	}
 }
 
-func (self *Generator) Generate(parser parser.Parser, template string) (string, string) {
+func (self *Generator) Generate(parser parser.Parser, template string) GeneratorOutput {
 	current := Fragment{
 		UseAnchor:          false,
 		Name:               "render",
@@ -172,5 +177,5 @@ func (self *Generator) Generate(parser parser.Parser, template string) (string, 
 	}
 	export default component`
 
-	return code, sourcemap.CreateSourcemap(values)
+	return GeneratorOutput{Output: code, Sourcemap: sourcemap.CreateSourcemap(values)}
 }
