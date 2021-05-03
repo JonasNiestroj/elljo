@@ -74,28 +74,24 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 
 					current.UpdateStatments = append(current.UpdateStatments, attributeUpdateStatement)
 				} else {
-					for _, variable := range parser.ScriptSource.Variables {
-						if variable == attribute.Value {
-							variableCreateStatement := `$name$.setAttribute("$attributeName$", $value$);`
-							variables := map[string]string{
-								"name":          name,
-								"attributeName": attribute.Name,
-								"value":         attribute.Value,
-							}
-							mappings = append(mappings, []int{})
-							createStatement += self.BuildString(variableCreateStatement, variables)
-							variableUpdateStatementSource := `if(dirtyInState.includes("$value")) {
+					variableCreateStatement := `$name$.setAttribute("$attributeName$", $value$);`
+					variables := map[string]string{
+						"name":          name,
+						"attributeName": attribute.Name,
+						"value":         attribute.Value,
+					}
+					mappings = append(mappings, []int{0, 0, children.Line, 0})
+					createStatement += self.BuildString(variableCreateStatement, variables)
+					variableUpdateStatementSource := `if(dirtyInState.includes("$value")) {
 								$name$.setAttribute("$attributeName$", context.$value$);
 							}`
 
-							variableUpdateStatement := Statement{
-								source:   self.BuildString(variableUpdateStatementSource, variables),
-								mappings: [][]int{{}, {}, {}},
-							}
-
-							current.UpdateStatments = append(current.UpdateStatments, variableUpdateStatement)
-						}
+					variableUpdateStatement := Statement{
+						source:   self.BuildString(variableUpdateStatementSource, variables),
+						mappings: [][]int{{}, {0, 0, children.Line, 0}, {}},
 					}
+
+					current.UpdateStatments = append(current.UpdateStatments, variableUpdateStatement)
 				}
 
 			} else if attribute.IsEvent {
