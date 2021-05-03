@@ -58,7 +58,7 @@ func (self *Generator) VisitIf(children parser.Entry, current *Fragment) *Fragme
 
 			updateStatement := Statement{
 				source:   self.BuildString(updateStatementTemplate, variables),
-				mappings: [][]int{{}, {}, {}, {}, {}, {}, {}, {}, {}},
+				mappings: [][]int{{0, 0, children.Line, 0}, {}, {}, {}, {}, {}, {}, {}, {}},
 			}
 
 			current.UpdateStatments = append(current.UpdateStatments, updateStatement)
