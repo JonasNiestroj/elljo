@@ -15,22 +15,28 @@ type FragmentCounter struct {
 type Fragment struct {
 	Name               string
 	UseAnchor          bool
-	InitStatements     []string
-	UpdateStatments    []string
-	TeardownStatements []string
+	InitStatements     []Statement
+	UpdateStatments    []Statement
+	TeardownStatements []Statement
 	ContextChain       []string
 	Target             string
 	Counters           FragmentCounter
 	Parent             *Fragment
 	IsComponent        bool
 	HasContext         bool
+	Mappings           [][]int
+}
+
+type Statement struct {
+	source   string
+	mappings [][]int
 }
 
 type Generator struct {
 	ifCounter   int
 	eachCounter int
 	textCounter int
-	renderers   []string
+	renderers   []Renderer
 }
 
 type GeneratorOutput struct {
@@ -45,7 +51,7 @@ func (self *Generator) Visit(parser parser.Parser, children parser.Entry, curren
 	case "Text":
 		current = self.VisitText(children, current)
 	case "MustacheTag":
-		current = self.VisitMustache(children, current)
+		current = self.VisitMustache(parser, children, current)
 	case "IfBlock":
 		current = self.VisitIf(children, current)
 	case "Loop":
@@ -73,20 +79,13 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 		UseAnchor:          false,
 		Name:               "render",
 		Target:             "target",
-		InitStatements:     []string{},
-		UpdateStatments:    []string{},
-		TeardownStatements: []string{},
+		InitStatements:     []Statement{},
+		UpdateStatments:    []Statement{},
+		TeardownStatements: []Statement{},
 		ContextChain:       []string{"context", "dirtyInState", "oldState"},
 	}
-	self.Visit(parser, *parser.Entries[0], &current, template)
-
-	self.renderers = append(self.renderers, self.CreateRenderer(current))
 
 	js := template[parser.ScriptSource.StartIndex:parser.ScriptSource.EndIndex]
-
-	for i, j := 0, len(self.renderers)-1; i < j; i, j = i+1, j-1 {
-		self.renderers[i], self.renderers[j] = self.renderers[j], self.renderers[i]
-	}
 
 	linesTillJs := 0
 
@@ -96,21 +95,55 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 		}
 	}
 
-	var values [][]int
+	mappings := [][]int{{}}
+
 	for index, _ := range strings.Split(js, "\n") {
 		if index == len(strings.Split(js, "\n"))-1 {
 			break
 		}
 		lineIndex := linesTillJs + (index + 1)
-		// If the index is not the first one we just want to add 1
-		if index != 0 {
-			lineIndex = 1
+		mappings = append(mappings, []int{0, 0, lineIndex, 0})
+	}
+
+	self.Visit(parser, *parser.Entries[0], &current, template)
+
+	self.renderers = append(self.renderers, self.CreateRenderer(current))
+
+	for i, j := 0, len(self.renderers)-1; i < j; i, j = i+1, j-1 {
+		self.renderers[i], self.renderers[j] = self.renderers[j], self.renderers[i]
+	}
+
+	var renderersSources []string
+
+	for _, renderer := range self.renderers {
+		renderersSources = append(renderersSources, renderer.source)
+		mappings = append(mappings, renderer.mappings...)
+	}
+
+	var mappingsStrings []string
+
+	var lastLine []int
+
+	for i := 0; i < len(mappings); i++ {
+		mapping := mappings[i]
+		if len(mapping) > 0 {
+
+			if len(lastLine) != 0 {
+				copy := mapping[2]
+				mapping[2] = mapping[2] - lastLine[2]
+				lastLine = []int{mapping[0], mapping[1], copy, mapping[3]}
+			} else {
+				lastLine = mapping
+			}
+			mappingsStrings = append(mappingsStrings, sourcemap.EncodeValues([]int{mapping[0], mapping[1], mapping[2], mapping[3]})+";")
+		} else {
+			mappingsStrings = append(mappingsStrings, ";")
 		}
-		values = append(values, []int{0, 0, lineIndex, 0})
 	}
 
 	code := `var component = function(options) {` + js +
-		`; var currentComponent = null;` + strings.Join(self.renderers, "\n\n") +
+		`; var currentComponent = null;
+		` + strings.Join(renderersSources, "\n") +
 		`
 			var component = {};
 			var state = {};
@@ -177,5 +210,5 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 	}
 	export default component`
 
-	return GeneratorOutput{Output: code, Sourcemap: sourcemap.CreateSourcemap(values)}
+	return GeneratorOutput{Output: code, Sourcemap: sourcemap.CreateSourcemap(mappingsStrings)}
 }

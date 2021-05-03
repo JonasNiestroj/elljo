@@ -10,7 +10,7 @@ func Mustache(parser *Parser) {
 	parser.Index += 2
 
 	parser.ReadWhitespace()
-
+	line := parser.currentLine
 	if parser.Read("/") {
 		current := parser.Entries[len(parser.Entries)-1]
 
@@ -93,6 +93,7 @@ func Mustache(parser *Parser) {
 			ExpressionSource: expressionSource,
 			Children:         []*Entry{},
 			Context:          context,
+			Line:             line,
 		}
 
 		parser.Entries[len(parser.Entries)-1].Children = append(parser.Entries[len(parser.Entries)-1].Children, entry)
@@ -115,6 +116,7 @@ func Mustache(parser *Parser) {
 			EntryType:        "MustacheTag",
 			Expression:       expression,
 			ExpressionSource: expressionSource,
+			Line:             line,
 		})
 	}
 }

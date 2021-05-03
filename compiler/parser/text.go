@@ -35,5 +35,6 @@ func Text(parser *Parser) {
 		EndIndex:   parser.Index,
 		EntryType:  "Text",
 		Data:       data,
+		Line:       parser.currentLine,
 	})
 }

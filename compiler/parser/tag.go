@@ -15,13 +15,13 @@ type Chunk struct {
 }
 
 type Attribute struct {
-	Name string
-	Value string
-	HasValue bool
+	Name         string
+	Value        string
+	HasValue     bool
 	IsExpression bool
-	IsEvent bool
-	Expression *ast.Program
-	IsCall bool
+	IsEvent      bool
+	Expression   *ast.Program
+	IsCall       bool
 }
 
 func ReadTagName(parser *Parser) string {
@@ -114,6 +114,8 @@ func Tag(parser *Parser) {
 
 	var name = ReadTagName(parser)
 
+	line := parser.currentLine
+
 	if isClosingTag {
 		parser.Read(">")
 
@@ -145,6 +147,7 @@ func Tag(parser *Parser) {
 		Name:       name,
 		Children:   []*Entry{},
 		Attributes: attributes,
+		Line:       line,
 	}
 
 	parser.Entries[len(parser.Entries)-1].Children = append(parser.Entries[len(parser.Entries)-1].Children, entry)

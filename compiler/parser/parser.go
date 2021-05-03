@@ -3,6 +3,7 @@ package parser
 import (
 	"elljo/compiler/js-parser/ast"
 	"regexp"
+	"strings"
 )
 
 type Entry struct {
@@ -15,7 +16,8 @@ type Entry struct {
 	Expression       *ast.Program
 	ExpressionSource string
 	Context          string
-	Attributes 		 []Attribute
+	Attributes       []Attribute
+	Line             int
 }
 
 type ScriptSource struct {
@@ -31,6 +33,7 @@ type Parser struct {
 	Template     string
 	Entries      []*Entry
 	ScriptSource ScriptSource
+	currentLine  int
 }
 
 func (self *Parser) Matches(str string) bool {
@@ -50,6 +53,7 @@ func (self *Parser) Read(str string) bool {
 }
 
 func (self *Parser) ReadWhitespace() {
+	start := self.Index
 	for self.Index < len(self.Template) {
 		var match, _ = regexp.MatchString(`\s`, string(self.Template[self.Index]))
 		if match {
@@ -58,13 +62,17 @@ func (self *Parser) ReadWhitespace() {
 			break
 		}
 	}
+	str := self.Template[start:self.Index]
+	self.currentLine += strings.Count(str, "\n")
 }
 
 func (self *Parser) ReadUntil(pattern *regexp.Regexp) string {
 	var match = pattern.FindStringIndex(self.Template[self.Index:len(self.Template)])
 
 	if match == nil {
-		return self.Template[self.Index:len(self.Template)]
+		str := self.Template[self.Index:len(self.Template)]
+		self.currentLine += strings.Count(str, "\n")
+		return str
 	}
 
 	if match[0] == 0 {
@@ -73,7 +81,9 @@ func (self *Parser) ReadUntil(pattern *regexp.Regexp) string {
 	start := self.Index
 	self.Index += match[0]
 
-	return self.Template[start:self.Index]
+	str := self.Template[start:self.Index]
+	self.currentLine += strings.Count(str, "\n")
+	return str
 }
 
 func (self *Parser) Parse() {

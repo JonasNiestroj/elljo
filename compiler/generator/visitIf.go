@@ -21,11 +21,19 @@ func (self *Generator) VisitIf(children parser.Entry, current *Fragment) *Fragme
 		"target":     current.Target,
 	}
 
-	createStatement := self.BuildString(template, variables)
+	createStatement := Statement{
+		source:   self.BuildString(template, variables),
+		mappings: [][]int{{}, {}, {}},
+	}
 
 	current.InitStatements = append(current.InitStatements, createStatement)
 
-	teardownStatement := "if(" + name + ") " + name + ".teardown();"
+	teardownStatementSource := "if(" + name + ") " + name + ".teardown();"
+
+	teardownStatement := Statement{
+		source:   teardownStatementSource,
+		mappings: [][]int{{}},
+	}
 
 	current.TeardownStatements = append(current.TeardownStatements, teardownStatement)
 	for _, declaration := range children.Expression.Body {
@@ -48,7 +56,12 @@ func (self *Generator) VisitIf(children parser.Entry, current *Fragment) *Fragme
 				"target":       current.Target,
 			}
 
-			current.UpdateStatments = append(current.UpdateStatments, self.BuildString(updateStatementTemplate, variables))
+			updateStatement := Statement{
+				source:   self.BuildString(updateStatementTemplate, variables),
+				mappings: [][]int{{}, {}, {}, {}, {}, {}, {}, {}, {}},
+			}
+
+			current.UpdateStatments = append(current.UpdateStatments, updateStatement)
 		}
 	}
 
@@ -57,9 +70,9 @@ func (self *Generator) VisitIf(children parser.Entry, current *Fragment) *Fragme
 		Name:               renderer,
 		Target:             "target",
 		ContextChain:       current.ContextChain,
-		InitStatements:     []string{},
-		UpdateStatments:    []string{},
-		TeardownStatements: []string{},
+		InitStatements:     []Statement{},
+		UpdateStatments:    []Statement{},
+		TeardownStatements: []Statement{},
 		Counters: FragmentCounter{
 			Text:    0,
 			Anchor:  0,

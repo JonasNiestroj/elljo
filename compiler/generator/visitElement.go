@@ -22,7 +22,11 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 			"name":   children.Name,
 			"target": current.Target,
 		}
-		current.InitStatements = append(current.InitStatements, self.BuildString(template, variables))
+		initStatement := Statement{
+			source:   self.BuildString(template, variables),
+			mappings: [][]int{},
+		}
+		current.InitStatements = append(current.InitStatements, initStatement)
 	} else {
 		template := "var $name$ = document.createElement('$childrenName$');"
 		variables := map[string]string{
@@ -30,6 +34,7 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 			"childrenName": strings.ReplaceAll(children.Name, "\n", ""),
 		}
 		createStatement := self.BuildString(template, variables)
+		mappings := [][]int{{}}
 
 		for attributeIndex, attribute := range children.Attributes {
 			if attribute.IsExpression {
@@ -40,12 +45,16 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 					};
 					$name$.setAttribute("$attributeName$", $name$_attr_$index$());`
 
+					mappings = append(mappings, []int{}, []int{}, []int{}, []int{}, []int{})
+
 					contextString := ""
 					for _, context := range current.ContextChain {
 						if context != "context" && context != "dirtyInState" && context != "oldState" {
 							contextString += `var ` + context + ` = currentContext.` + context + `;`
+							mappings = append(mappings, []int{})
 						}
 					}
+
 					variables := map[string]string{
 						"name":          name,
 						"index":         strconv.Itoa(attributeIndex),
@@ -56,9 +65,14 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 
 					createStatement += self.BuildString(attributeCreateStatement, variables)
 
-					attributeUpdateStatement := `$name$.setAttribute("$attributeName$", $name$_attr_$index$());`
+					attributeUpdateStatementSource := `$name$.setAttribute("$attributeName$", $name$_attr_$index$());`
 
-					current.UpdateStatments = append(current.UpdateStatments, self.BuildString(attributeUpdateStatement, variables))
+					attributeUpdateStatement := Statement{
+						source:   self.BuildString(attributeUpdateStatementSource, variables),
+						mappings: [][]int{},
+					}
+
+					current.UpdateStatments = append(current.UpdateStatments, attributeUpdateStatement)
 				} else {
 					for _, variable := range parser.ScriptSource.Variables {
 						if variable == attribute.Value {
@@ -68,11 +82,18 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 								"attributeName": attribute.Name,
 								"value":         attribute.Value,
 							}
+							mappings = append(mappings, []int{})
 							createStatement += self.BuildString(variableCreateStatement, variables)
-							variableUpdateStatement := `if(dirtyInState.includes("$value")) {
+							variableUpdateStatementSource := `if(dirtyInState.includes("$value")) {
 								$name$.setAttribute("$attributeName$", context.$value$);
 							}`
-							current.UpdateStatments = append(current.UpdateStatments, self.BuildString(variableUpdateStatement, variables))
+
+							variableUpdateStatement := Statement{
+								source:   self.BuildString(variableUpdateStatementSource, variables),
+								mappings: [][]int{{}, {}, {}},
+							}
+
+							current.UpdateStatments = append(current.UpdateStatments, variableUpdateStatement)
 						}
 					}
 				}
@@ -83,11 +104,12 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 						$context$
 						$value$
 					});`
-
+					mappings = append(mappings, []int{}, []int{}, []int{}, []int{})
 					contextTemplate := ""
 					for _, context := range current.ContextChain {
 						if context != "context" && context != "dirtyInState" && context != "oldState" {
 							contextTemplate += `var ` + context + ` = currentContext.` + context + `;\n`
+							mappings = append(mappings, []int{})
 						}
 					}
 					variables := map[string]string{
@@ -98,19 +120,30 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 					createStatement += self.BuildString(attributeCreateStatement, variables)
 				} else {
 					createStatement += name + `.addEventListener("` + attribute.Name + `", ` + attribute.Value + `);`
+					mappings = append(mappings, []int{})
 				}
 
 			} else {
 				if attribute.HasValue {
 					createStatement += name + `.setAttribute("` + attribute.Name + `", "` + attribute.Value + `");`
+					mappings = append(mappings, []int{})
 				} else {
 					createStatement += name + `.setAttribute("` + attribute.Name + `", "true");`
+					mappings = append(mappings, []int{})
 				}
 			}
 		}
-		current.InitStatements = append(current.InitStatements, createStatement)
+		current.InitStatements = append(current.InitStatements, Statement{
+			source:   createStatement,
+			mappings: mappings,
+		})
 
-		removeStatement := name + ".parentNode.removeChild(" + name + ")"
+		removeStatementSource := name + ".parentNode.removeChild(" + name + ")"
+
+		removeStatement := Statement{
+			source:   removeStatementSource,
+			mappings: [][]int{{}},
+		}
 
 		current.TeardownStatements = append(current.TeardownStatements, removeStatement)
 	}
@@ -139,9 +172,17 @@ func (self *Generator) VisitElementAfter(current *Fragment) {
 
 	if !isComponent {
 		if current.UseAnchor && current.Target == "target" {
-			current.InitStatements = append(current.InitStatements, "target.insertBefore("+name+", anchor);")
+			initStatement := Statement{
+				source:   "target.insertBefore(" + name + ", anchor);",
+				mappings: [][]int{{}},
+			}
+			current.InitStatements = append(current.InitStatements, initStatement)
 		} else {
-			current.InitStatements = append(current.InitStatements, current.Target+".appendChild("+name+");")
+			initStatement := Statement{
+				source:   current.Target + ".appendChild(" + name + ");",
+				mappings: [][]int{{}},
+			}
+			current.InitStatements = append(current.InitStatements, initStatement)
 		}
 	}
 }
