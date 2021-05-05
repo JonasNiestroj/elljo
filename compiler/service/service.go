@@ -22,6 +22,16 @@ func RunService() {
 			}
 			parserInstance.Parse()
 
+			if len(parserInstance.Errors) > 0 {
+				errors, err := json.Marshal(parserInstance.Errors)
+				if err != nil {
+					os.Stdout.Write([]byte(err.Error()))
+					panic(err)
+				}
+				os.Stdout.Write(errors)
+				break
+			}
+
 			generatorInstance := generator.Generator{}
 
 			generated := generatorInstance.Generate(parserInstance, parserInstance.Template)

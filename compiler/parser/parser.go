@@ -34,6 +34,7 @@ type Parser struct {
 	Entries      []*Entry
 	ScriptSource ScriptSource
 	currentLine  int
+	Errors       []Error
 }
 
 func (self *Parser) Matches(str string) bool {
@@ -44,12 +45,24 @@ func (self *Parser) Matches(str string) bool {
 	return self.Template[self.Index:to] == str
 }
 
-func (self *Parser) Read(str string) bool {
-	if self.Matches(str) {
-		self.Index += len(str)
+func read(parser *Parser, str string) bool {
+	if parser.Matches(str) {
+		parser.Index += len(str)
 		return true
 	}
 	return false
+}
+
+func (self *Parser) ReadRequired(str string) bool {
+	read := read(self, str)
+	if !read {
+		self.Error("Expected " + str)
+	}
+	return read
+}
+
+func (self *Parser) Read(str string) bool {
+	return read(self, str)
 }
 
 func (self *Parser) ReadWhitespace() {

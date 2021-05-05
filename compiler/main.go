@@ -6,6 +6,7 @@ import (
 	"elljo/compiler/service"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -26,6 +27,13 @@ func main() {
 	}
 
 	parserInstance.Parse()
+
+	if len(parserInstance.Errors) > 0 {
+		for _, error := range parserInstance.Errors {
+			println("Line " + strconv.Itoa(error.Line) + ": " + error.Message)
+		}
+		return
+	}
 
 	var generatorInstance = generator.Generator{}
 

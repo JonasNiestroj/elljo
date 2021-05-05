@@ -24,7 +24,7 @@ func Mustache(parser *Parser) {
 
 		parser.Read(expected)
 		parser.ReadWhitespace()
-		parser.Read("}}")
+		parser.ReadRequired("}}")
 
 		firstChild := current.Children[0]
 		lastChild := current.Children[len(current.Children)-1]
