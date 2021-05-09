@@ -7,8 +7,8 @@ import (
 
 func Mustache(parser *Parser) {
 	start := parser.Index
+	parser.PossibleErrorIndex = parser.Index
 	parser.Index += 2
-
 	parser.ReadWhitespace()
 	line := parser.currentLine
 	if parser.Read("/") {
@@ -22,9 +22,10 @@ func Mustache(parser *Parser) {
 			expected = "loop"
 		}
 
-		parser.Read(expected)
-		parser.ReadWhitespace()
-		parser.ReadRequired("}}")
+		read := parser.ReadRequired(expected)
+		if read {
+			parser.ReadWithWhitespaceRequired("}}")
+		}
 
 		firstChild := current.Children[0]
 		lastChild := current.Children[len(current.Children)-1]
@@ -66,8 +67,7 @@ func Mustache(parser *Parser) {
 			parser.ReadWhitespace()
 			pattern, _ := regexp.Compile(` as`)
 			expressionSource = parser.ReadUntil(pattern)
-			parser.ReadWhitespace()
-			parser.Read("as")
+			parser.ReadWithWhitespaceRequired("as")
 			parser.ReadWhitespace()
 
 			regex, _ := regexp.Compile(`\s|(}})`)
@@ -83,7 +83,7 @@ func Mustache(parser *Parser) {
 
 		expression := ReadExpression(expressionSource)
 
-		parser.Read("}}")
+		parser.ReadWithWhitespaceRequired("}}")
 
 		entry := &Entry{
 			StartIndex:       startIndex,
@@ -106,9 +106,7 @@ func Mustache(parser *Parser) {
 
 		expression := ReadExpression(expressionSource)
 
-		parser.ReadWhitespace()
-
-		parser.Read("}}")
+		parser.ReadWithWhitespaceRequired("}}")
 
 		parser.Entries[len(parser.Entries)-1].Children = append(parser.Entries[len(parser.Entries)-1].Children, &Entry{
 			StartIndex:       start,

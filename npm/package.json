@@ -18,7 +18,7 @@
   "author": "Jonas Niestroj",
   "license": "MIT",
   "bin": {
-    "jo": "bin/jo"
+    "jo": "bin"
   },
   "bugs": {
     "url": "https://github.com/JonasNiestroj/elljo/issues"

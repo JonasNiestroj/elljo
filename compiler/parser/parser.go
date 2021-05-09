@@ -3,7 +3,6 @@ package parser
 import (
 	"elljo/compiler/js-parser/ast"
 	"regexp"
-	"strings"
 )
 
 type Entry struct {
@@ -29,13 +28,19 @@ type ScriptSource struct {
 }
 
 type Parser struct {
-	Index        int
-	Template     string
-	Entries      []*Entry
-	ScriptSource ScriptSource
-	currentLine  int
-	Errors       []Error
+	Index              int
+	Template           string
+	Entries            []*Entry
+	ScriptSource       ScriptSource
+	currentLine        int
+	Errors             []Error
+	PossibleErrorIndex int
+	lineStartIndex     int
 }
+
+var (
+	newLineRegex = regexp.MustCompile("(\\r\\n|\\r|\\n)")
+)
 
 func (self *Parser) Matches(str string) bool {
 	var to = self.Index + len(str)
@@ -65,6 +70,30 @@ func (self *Parser) Read(str string) bool {
 	return read(self, str)
 }
 
+func (self *Parser) ReadWithWhitespaceRequired(str string) bool {
+	start := self.Index
+	for self.Index < len(self.Template) {
+		var match, _ = regexp.MatchString(`\s`, string(self.Template[self.Index]))
+		if match {
+			self.Index++
+		} else {
+			break
+		}
+	}
+	read := read(self, str)
+	if !read {
+		self.Error("Expected " + str)
+	}
+	readSource := self.Template[start:self.Index]
+	newLines := len(newLineRegex.FindAllStringIndex(readSource, -1))
+	if newLines > 0 {
+		self.currentLine += newLines
+		self.lineStartIndex = self.Index
+	}
+
+	return read
+}
+
 func (self *Parser) ReadWhitespace() {
 	start := self.Index
 	for self.Index < len(self.Template) {
@@ -75,8 +104,13 @@ func (self *Parser) ReadWhitespace() {
 			break
 		}
 	}
+
 	str := self.Template[start:self.Index]
-	self.currentLine += strings.Count(str, "\n")
+	newLines := len(newLineRegex.FindAllStringIndex(str, -1))
+	if newLines > 0 {
+		self.currentLine += newLines
+		self.lineStartIndex = self.Index
+	}
 }
 
 func (self *Parser) ReadUntil(pattern *regexp.Regexp) string {
@@ -84,7 +118,11 @@ func (self *Parser) ReadUntil(pattern *regexp.Regexp) string {
 
 	if match == nil {
 		str := self.Template[self.Index:len(self.Template)]
-		self.currentLine += strings.Count(str, "\n")
+		newLines := len(newLineRegex.FindAllStringIndex(str, -1))
+		if newLines > 0 {
+			self.currentLine += newLines
+			self.lineStartIndex = self.Index
+		}
 		return str
 	}
 
@@ -95,7 +133,11 @@ func (self *Parser) ReadUntil(pattern *regexp.Regexp) string {
 	self.Index += match[0]
 
 	str := self.Template[start:self.Index]
-	self.currentLine += strings.Count(str, "\n")
+	newLines := len(newLineRegex.FindAllStringIndex(str, -1))
+	if newLines > 0 {
+		self.currentLine += newLines
+		self.lineStartIndex = self.Index
+	}
 	return str
 }
 
