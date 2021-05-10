@@ -16,7 +16,7 @@ func Mustache(parser *Parser) {
 
 		expected := ""
 
-		if current.EntryType == "IfBlock" {
+		if current.EntryType == "IfBlock" || current.EntryType == "ElseBlock" {
 			expected = "if"
 		} else if current.EntryType == "Loop" {
 			expected = "loop"
@@ -30,18 +30,20 @@ func Mustache(parser *Parser) {
 		firstChild := current.Children[0]
 		lastChild := current.Children[len(current.Children)-1]
 
-		charBefore := string(parser.Template[current.StartIndex-1])
-		charAfter := ""
-		if parser.Index < len(parser.Template) {
-			charAfter = string(parser.Template[parser.Index])
-		}
+		if current.StartIndex-1 >= 0 {
+			charBefore := string(parser.Template[current.StartIndex-1])
+			charAfter := ""
+			if parser.Index < len(parser.Template) {
+				charAfter = string(parser.Template[parser.Index])
+			}
 
-		if charBefore == " " {
-			firstChild.Data = utils.TrimStart(firstChild.Data)
-		}
+			if charBefore == " " {
+				firstChild.Data = utils.TrimStart(firstChild.Data)
+			}
 
-		if charAfter == " " {
-			lastChild.Data = utils.TrimEnd(lastChild.Data)
+			if charAfter == " " {
+				lastChild.Data = utils.TrimEnd(lastChild.Data)
+			}
 		}
 
 		current.EndIndex = parser.Index
@@ -55,6 +57,9 @@ func Mustache(parser *Parser) {
 			startIndex += 2
 		} else if parser.Read("loop") {
 			expressionType = "Loop"
+			startIndex += 4
+		} else if parser.Read("else") {
+			expressionType = "ElseBlock"
 			startIndex += 4
 		}
 
@@ -76,6 +81,14 @@ func Mustache(parser *Parser) {
 			context = readContext
 
 			parser.ReadWhitespace()
+		} else if expressionType == "ElseBlock" {
+			current := parser.Entries[len(parser.Entries)-1]
+			if current.EntryType != "IfBlock" {
+				parser.Error("Else is only allowed after an if block")
+				return
+			}
+			current.HasElse = true
+			current.EndIndex = parser.Index - 4
 		} else {
 			pattern, _ := regexp.Compile(`}}`)
 			expressionSource = parser.ReadUntil(pattern)

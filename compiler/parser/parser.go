@@ -17,6 +17,7 @@ type Entry struct {
 	Context          string
 	Attributes       []Attribute
 	Line             int
+	HasElse          bool
 }
 
 type ScriptSource struct {
