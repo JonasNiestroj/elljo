@@ -11,6 +11,7 @@ import (
 
 func RunService() {
 	scanner := bufio.NewScanner(os.Stdin)
+	output := bufio.NewWriter(os.Stdout)
 	for scanner.Scan() {
 		bytes := scanner.Bytes()
 		message := strings.ReplaceAll(string(bytes), "\\n", "\n")
@@ -25,10 +26,12 @@ func RunService() {
 			if len(parserInstance.Errors) > 0 {
 				errors, err := json.Marshal(parserInstance.Errors)
 				if err != nil {
-					os.Stdout.Write([]byte(err.Error()))
+					output.Write([]byte(err.Error()))
+					output.Flush()
 					panic(err)
 				}
-				os.Stdout.Write(errors)
+				output.Write(errors)
+				output.Flush()
 				break
 			}
 
@@ -39,11 +42,12 @@ func RunService() {
 			outputJson, err := json.Marshal(generated)
 
 			if err != nil {
-				os.Stdout.Write([]byte(err.Error()))
+				output.Write([]byte(err.Error()))
+				output.Flush()
 				panic(err)
 			}
-
-			os.Stdout.Write(outputJson)
+			output.Write(outputJson)
+			output.Flush()
 
 			break
 		}

@@ -5,8 +5,10 @@ import (
 	"strconv"
 )
 
-func (self *Generator) VisitElse(children parser.Entry, current *Fragment) *Fragment {
-	renderer := "renderElseBlock_" + strconv.Itoa(self.elseCounter)
+func (self *Generator) VisitElseIf(children parser.Entry, current *Fragment) *Fragment {
+	renderer := "renderElseIfBlock_" + strconv.Itoa(self.elseIfCounter)
+
+	self.elseIfCounter++
 
 	return &Fragment{
 		UseAnchor:          true,
@@ -25,7 +27,7 @@ func (self *Generator) VisitElse(children parser.Entry, current *Fragment) *Frag
 	}
 }
 
-func (self *Generator) VisitElseAfter(current *Fragment) {
+func (self *Generator) VisitElseIfAfter(current *Fragment) {
 	self.renderers = append(self.renderers, self.CreateRenderer(*current))
 	current = current.Parent
 }

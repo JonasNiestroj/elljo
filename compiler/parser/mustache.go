@@ -5,6 +5,10 @@ import (
 	"regexp"
 )
 
+var (
+	ifBlock *Entry
+)
+
 func Mustache(parser *Parser) {
 	start := parser.Index
 	parser.PossibleErrorIndex = parser.Index
@@ -12,11 +16,12 @@ func Mustache(parser *Parser) {
 	parser.ReadWhitespace()
 	line := parser.currentLine
 	if parser.Read("/") {
+		ifBlock = nil
 		current := parser.Entries[len(parser.Entries)-1]
 
 		expected := ""
 
-		if current.EntryType == "IfBlock" || current.EntryType == "ElseBlock" {
+		if current.EntryType == "IfBlock" || current.EntryType == "ElseBlock" || current.EntryType == "ElseIfBlock" {
 			expected = "if"
 		} else if current.EntryType == "Loop" {
 			expected = "loop"
@@ -61,6 +66,9 @@ func Mustache(parser *Parser) {
 		} else if parser.Read("else") {
 			expressionType = "ElseBlock"
 			startIndex += 4
+		} else if parser.Read("elif") {
+			expressionType = "ElseIfBlock"
+			startIndex += 4
 		}
 
 		parser.ReadWhitespace()
@@ -83,12 +91,22 @@ func Mustache(parser *Parser) {
 			parser.ReadWhitespace()
 		} else if expressionType == "ElseBlock" {
 			current := parser.Entries[len(parser.Entries)-1]
-			if current.EntryType != "IfBlock" {
-				parser.Error("Else is only allowed after an if block")
+			if current.EntryType != "IfBlock" && current.EntryType != "ElseIfBlock" {
+				parser.Error("Else is only allowed after an if or elseif block")
 				return
 			}
 			current.HasElse = true
 			current.EndIndex = parser.Index - 4
+		} else if expressionType == "ElseIfBlock" {
+			current := parser.Entries[len(parser.Entries)-1]
+			if current.EntryType != "IfBlock" && current.EntryType != "ElseIfBlock" {
+				parser.Error("Elif is only allowed after an if or elif block")
+				return
+			}
+
+			current.EndIndex = parser.Index - 4
+			pattern, _ := regexp.Compile(`}}`)
+			expressionSource = parser.ReadUntil(pattern)
 		} else {
 			pattern, _ := regexp.Compile(`}}`)
 			expressionSource = parser.ReadUntil(pattern)
@@ -107,6 +125,14 @@ func Mustache(parser *Parser) {
 			Children:         []*Entry{},
 			Context:          context,
 			Line:             line,
+		}
+
+		if entry.EntryType == "IfBlock" {
+			ifBlock = entry
+		} else if entry.EntryType == "ElseIfBlock" {
+			ifBlock.ElseIfs = append(ifBlock.ElseIfs, entry)
+		} else if entry.EntryType == "ElseBlock" {
+			ifBlock.Else = entry
 		}
 
 		parser.Entries[len(parser.Entries)-1].Children = append(parser.Entries[len(parser.Entries)-1].Children, entry)

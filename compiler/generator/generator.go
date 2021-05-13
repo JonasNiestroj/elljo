@@ -33,11 +33,12 @@ type Statement struct {
 }
 
 type Generator struct {
-	ifCounter   int
-	elseCounter int
-	eachCounter int
-	textCounter int
-	renderers   []Renderer
+	ifCounter     int
+	elseCounter   int
+	elseIfCounter int
+	eachCounter   int
+	textCounter   int
+	renderers     []Renderer
 }
 
 type GeneratorOutput struct {
@@ -59,6 +60,8 @@ func (self *Generator) Visit(parser parser.Parser, children parser.Entry, curren
 		current = self.VisitLoop(children, current)
 	case "ElseBlock":
 		current = self.VisitElse(children, current)
+	case "ElseIfBlock":
+		current = self.VisitElseIf(children, current)
 	}
 
 	if len(children.Children) > 0 {
@@ -76,6 +79,8 @@ func (self *Generator) Visit(parser parser.Parser, children parser.Entry, curren
 		self.VisitLoopAfter(current)
 	case "ElseBlock":
 		self.VisitElseAfter(current)
+	case "ElseIfBlock":
+		self.VisitElseIfAfter(current)
 	}
 }
 

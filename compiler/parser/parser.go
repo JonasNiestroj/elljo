@@ -18,6 +18,8 @@ type Entry struct {
 	Attributes       []Attribute
 	Line             int
 	HasElse          bool
+	ElseIfs          []*Entry
+	Else             *Entry
 }
 
 type ScriptSource struct {
