@@ -7,21 +7,21 @@ import (
 )
 
 type Parser struct {
-	Template string
-	Length int
-	Base int
-	Char rune
-	CharOffset int
-	Offset int
-	Index int
-	Token token.Token
-	Literal string
-	ParsedLiteral unistring.String
-	Scope *Scope
-	InsertSemicolon bool
+	Template          string
+	Length            int
+	Base              int
+	Char              rune
+	CharOffset        int
+	Offset            int
+	Index             int
+	Token             token.Token
+	Literal           string
+	ParsedLiteral     unistring.String
+	Scope             *Scope
+	InsertSemicolon   bool
 	ImplicitSemicolon bool
-	Errors ErrorList
-	Recover struct {
+	Errors            ErrorList
+	Recover           struct {
 		Index int
 		Count int
 	}
@@ -59,9 +59,6 @@ func (self *Parser) OptionalSemicolon() {
 	if self.ImplicitSemicolon {
 		self.ImplicitSemicolon = false
 		return
-	}
-	if self.Token != token.EOF && self.Token != token.RIGHT_BRACE {
-		self.ExpectToken(token.SEMICOLON)
 	}
 }
 

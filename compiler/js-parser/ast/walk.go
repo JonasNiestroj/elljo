@@ -18,8 +18,11 @@ func Walk(node Node, nodeCallback func(node Node)) {
 		Walk(node.Callee, nodeCallback)
 	case *VariableExpression:
 		nodeCallback(node)
+		Walk(node.Initializer, nodeCallback)
 	case *AssignExpression:
 		nodeCallback(node)
+		Walk(node.Left, nodeCallback)
+		Walk(node.Right, nodeCallback)
 	case *CallExpression:
 		nodeCallback(node)
 		Walk(node.Callee, nodeCallback)
@@ -36,6 +39,7 @@ func Walk(node Node, nodeCallback func(node Node)) {
 		Walk(node.Body, nodeCallback)
 	case *BracketExpression:
 		nodeCallback(node)
+		Walk(node.Left, nodeCallback)
 		Walk(node.Member, nodeCallback)
 	case *BlockStatement:
 		nodeCallback(node)
@@ -62,5 +66,19 @@ func Walk(node Node, nodeCallback func(node Node)) {
 	case *IfStatement:
 		nodeCallback(node)
 		Walk(node.Consequent, nodeCallback)
+	case *ArrayLiteral:
+		nodeCallback(node)
+		for _, b := range node.Value {
+			Walk(b, nodeCallback)
+		}
+	case *BadExpression:
+		nodeCallback(node)
+	case *BooleanLiteral:
+		nodeCallback(node)
+	case *ConditionalExpression:
+		nodeCallback(node)
+	case *ReturnStatement:
+		nodeCallback(node)
+		Walk(node.Argument, nodeCallback)
 	}
 }

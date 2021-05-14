@@ -1,10 +1,10 @@
 package parser
 
 import (
-	"errors"
-	"fmt"
 	"elljo/compiler/js-parser/token"
 	"elljo/compiler/js-parser/unistring"
+	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"unicode"
@@ -283,7 +283,7 @@ func (self *Parser) Scan() (tkn token.Token, literal string, parsedLiteral unist
 			case '>':
 				tkn = self.Switch6(token.GREATER, token.GREATER_OR_EQUAL, '>', token.SHIFT_RIGHT, token.SHIFT_RIGHT_ASSIGN, '>', token.UNSIGNED_SHIFT_RIGHT, token.UNSIGNED_SHIFT_RIGHT_ASSIGN)
 			case '=':
-				tkn = self.Switch2(token.ASSIGN, token.EQUAL)
+				tkn = self.Switch3(token.ASSIGN, token.EQUAL, '>', token.ARROW_FUNCTION)
 				if tkn == token.EQUAL && self.Char == '=' {
 					self.Read()
 					tkn = token.STRICT_EQUAL
@@ -381,8 +381,8 @@ func (self *Parser) Switch6(tkn0, tkn1 token.Token, chr2 rune, tkn2, tkn3 token.
 }
 
 func (self *Parser) Peek() rune {
-	if self.Offset + 1 < self.Length {
-		return rune(self.Template[self.Offset + 1])
+	if self.Offset+1 < self.Length {
+		return rune(self.Template[self.Offset+1])
 	}
 	return -1
 }
@@ -393,7 +393,7 @@ func (self *Parser) Read() {
 		if chr >= utf8.RuneSelf {
 			chr, width = utf8.DecodeRuneInString(self.Template[self.Offset:])
 			if chr == utf8.RuneError && width == 1 {
-				self.Error( "Invalid UTF-8 character")
+				self.Error("Invalid UTF-8 character")
 			}
 		}
 		self.Offset += width
@@ -505,7 +505,7 @@ func (self *Parser) ScanEscape(quote rune) (int, bool) {
 			if digit >= base {
 				break
 			}
-			value = value * base + digit
+			value = value*base + digit
 			self.Read()
 		}
 		chr = rune(value)
@@ -624,7 +624,7 @@ func ParseNumberLiteral(literal string) (value interface{}, err error) {
 				if digit >= 16 {
 					return nil, errors.New("Illegal numeric literal")
 				}
-				value = value * 16 + float64(digit)
+				value = value*16 + float64(digit)
 			}
 			return value, nil
 		}
@@ -636,7 +636,7 @@ func ParseStringLiteral1(literal string, length int, unicode bool) (unistring.St
 	var sb strings.Builder
 	var chars []uint16
 	if unicode {
-		chars = make([]uint16, 1, length + 1)
+		chars = make([]uint16, 1, length+1)
 		chars[0] = unistring.BOM
 	} else {
 		sb.Grow(length)
@@ -727,7 +727,7 @@ func ParseStringLiteral1(literal string, length int, unicode bool) (unistring.St
 				value = rune(chr) - '0'
 				j := 0
 				for ; j < 2; j++ {
-					if len(str) < j + 1 {
+					if len(str) < j+1 {
 						break
 					}
 					chr := str[j]
@@ -770,7 +770,7 @@ func ParseStringLiteral1(literal string, length int, unicode bool) (unistring.St
 		}
 	}
 	if unicode {
-		if len(chars) != length + 1 {
+		if len(chars) != length+1 {
 			panic(fmt.Errorf("Unexpected unicode length while parsing '%s'", literal))
 		}
 		return unistring.FromUtf16(chars), nil
@@ -798,7 +798,7 @@ func (self *Parser) ScanNumericLiteral(decimalPoint bool) (token.Token, string) 
 			if IsDigit(self.Char, 16) {
 				self.Read()
 			} else {
-				return token.ILLEGAL, self.Template[offset: self.CharOffset]
+				return token.ILLEGAL, self.Template[offset:self.CharOffset]
 			}
 			self.ScanMantissa(16)
 

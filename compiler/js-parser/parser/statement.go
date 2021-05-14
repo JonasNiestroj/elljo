@@ -7,8 +7,8 @@ import (
 
 func (self *Parser) ParseBlockStatement() *ast.BlockStatement {
 	return &ast.BlockStatement{
-		LeftBrace: self.ExpectToken(token.LEFT_BRACE),
-		List: self.ParseStatementList(),
+		LeftBrace:  self.ExpectToken(token.LEFT_BRACE),
+		List:       self.ParseStatementList(),
 		RightBrace: self.ExpectToken(token.RIGHT_BRACE),
 	}
 }
@@ -19,7 +19,8 @@ func (self *Parser) ParseEmptyStatement() ast.Statement {
 
 func (self *Parser) ParseStatementList() (statements []ast.Statement) {
 	for self.Token != token.RIGHT_BRACE && self.Token != token.EOF {
-		statements = append(statements, self.ParseStatement())
+		statement := self.ParseStatement()
+		statements = append(statements, statement)
 	}
 	return
 }
@@ -81,14 +82,15 @@ func (self *Parser) ParseStatement() ast.Statement {
 		}
 		self.Scope.Labels = append(self.Scope.Labels, label)
 		statement := self.ParseStatement()
-		self.Scope.Labels = self.Scope.Labels[:len(self.Scope.Labels) - 1]
+		self.Scope.Labels = self.Scope.Labels[:len(self.Scope.Labels)-1]
 		return &ast.LabelledStatement{
-			Label: identifier,
-			Colon: colon,
+			Label:     identifier,
+			Colon:     colon,
 			Statement: statement,
 		}
 	}
 	self.OptionalSemicolon()
+
 	return &ast.ExpressionStatement{
 		Expression: expression,
 	}
@@ -96,7 +98,7 @@ func (self *Parser) ParseStatement() ast.Statement {
 
 func (self *Parser) ParseTryStatement() ast.Statement {
 	node := &ast.TryStatement{
-		Try: self.ExpectToken(token.TRY),
+		Try:  self.ExpectToken(token.TRY),
 		Body: self.ParseBlockStatement(),
 	}
 
@@ -112,9 +114,9 @@ func (self *Parser) ParseTryStatement() ast.Statement {
 			identifier := self.ParseIdentifier()
 			self.ExpectToken(token.RIGHT_PARENTHESIS)
 			node.Catch = &ast.CatchStatement{
-				Catch: catch,
+				Catch:     catch,
 				Parameter: identifier,
-				Body: self.ParseBlockStatement(),
+				Body:      self.ParseBlockStatement(),
 			}
 		}
 	}
@@ -141,9 +143,9 @@ func (self *Parser) ParseImportStatement() ast.Statement {
 	self.ExpectToken(token.STRING)
 
 	return &ast.ImportStatement{
-		From: from,
-		To: self.Index,
-		Name: name,
+		From:   from,
+		To:     self.Index,
+		Name:   name,
 		Source: source,
 	}
 }
@@ -165,7 +167,7 @@ func (self *Parser) ParseFunctionParameterList() *ast.ParameterList {
 
 	return &ast.ParameterList{
 		Opening: opening,
-		List: list,
+		List:    list,
 		Closing: closing,
 	}
 }
@@ -207,18 +209,28 @@ func (self *Parser) ParseFunction(declaration bool) *ast.FunctionLiteral {
 	return node
 }
 
-func (self *Parser) ParseFunctionBlock(node *ast.FunctionLiteral) {
-	{
-		self.OpenScope()
-		inFunction := self.Scope.InFunction
-		self.Scope.InFunction = true
-		defer func() {
-			self.Scope.InFunction = inFunction
-			self.CloseScope()
-		}()
-		node.Body = self.ParseBlockStatement()
-		node.DeclarationList = self.Scope.DeclarationList
+func (self *Parser) ParseArrowFunction() *ast.FunctionLiteral {
+	node := &ast.FunctionLiteral{}
+	if self.Token != token.RIGHT_PARENTHESIS {
+		node.ParameterList = self.ParseFunctionParameterList()
 	}
+	self.NextToken()
+	self.ExpectToken(token.ARROW_FUNCTION)
+	self.ParseFunctionBlock(node)
+	node.Source = self.Slice(node.Index0(), node.Index1())
+	return node
+}
+
+func (self *Parser) ParseFunctionBlock(node *ast.FunctionLiteral) {
+	self.OpenScope()
+	inFunction := self.Scope.InFunction
+	self.Scope.InFunction = true
+	defer func() {
+		self.Scope.InFunction = inFunction
+		self.CloseScope()
+	}()
+	node.Body = self.ParseBlockStatement()
+	node.DeclarationList = self.Scope.DeclarationList
 }
 
 func (self *Parser) ParseDebuggerStatement() ast.Statement {
@@ -279,7 +291,7 @@ func (self *Parser) ParseSwitchStatement() ast.Statement {
 	self.ExpectToken(token.LEFT_PARENTHESIS)
 	node := &ast.SwitchStatement{
 		Discriminant: self.ParseExpression(),
-		Default: -1,
+		Default:      -1,
 	}
 	self.ExpectToken(token.RIGHT_PARENTHESIS)
 	self.ExpectToken(token.LEFT_BRACE)
@@ -354,10 +366,10 @@ func (self *Parser) ParseForIn(index int, into ast.Expression) *ast.ForInStateme
 	self.ExpectToken(token.RIGHT_PARENTHESIS)
 
 	return &ast.ForInStatement{
-		For: index,
-		Into: into,
+		For:    index,
+		Into:   into,
 		Source: source,
-		Body: self.ParseIterationStatement(),
+		Body:   self.ParseIterationStatement(),
 	}
 }
 
@@ -366,10 +378,10 @@ func (self *Parser) ParseForOf(index int, into ast.Expression) *ast.ForOfStateme
 	self.ExpectToken(token.RIGHT_PARENTHESIS)
 
 	return &ast.ForOfStatement{
-		For: index,
-		Into: into,
+		For:    index,
+		Into:   into,
 		Source: source,
-		Body: self.ParseIterationStatement(),
+		Body:   self.ParseIterationStatement(),
 	}
 }
 
@@ -386,11 +398,11 @@ func (self *Parser) ParseFor(index int, initializer ast.Expression) *ast.ForStat
 	self.ExpectToken(token.RIGHT_PARENTHESIS)
 
 	return &ast.ForStatement{
-		For: index,
+		For:         index,
 		Initializer: initializer,
-		Test: test,
-		Update: update,
-		Body: self.ParseIterationStatement(),
+		Test:        test,
+		Update:      update,
+		Body:        self.ParseIterationStatement(),
 	}
 }
 
@@ -458,9 +470,8 @@ func (self *Parser) ParseVariableStatement() *ast.VariableStatement {
 	index := self.ExpectToken(token.VAR, token.LET, token.CONST)
 	list := self.ParseVariableDeclarationList(index)
 	self.Semicolon()
-
 	return &ast.VariableStatement{
-		Var: index,
+		Var:  index,
 		List: list,
 	}
 }
@@ -546,7 +557,7 @@ func (self *Parser) ParseProgram() *ast.Program {
 	self.OpenScope()
 	defer self.CloseScope()
 	prg := &ast.Program{
-		Body: self.ParseSourceElements(),
+		Body:            self.ParseSourceElements(),
 		DeclarationList: self.Scope.DeclarationList,
 	}
 	return prg

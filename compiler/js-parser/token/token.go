@@ -62,6 +62,7 @@ const (
 	STRICT_NOT_EQUAL
 	LESS_OR_EQUAL
 	GREATER_OR_EQUAL
+	ARROW_FUNCTION
 
 	LEFT_PARENTHESIS
 	LEFT_BRACKET
@@ -165,6 +166,7 @@ var tokenMap = [...]string{
 	STRICT_NOT_EQUAL:            "!==",
 	LESS_OR_EQUAL:               "<=",
 	GREATER_OR_EQUAL:            ">=",
+	ARROW_FUNCTION:              "=>",
 	LEFT_PARENTHESIS:            "(",
 	LEFT_BRACKET:                "[",
 	LEFT_BRACE:                  "{",
@@ -212,7 +214,6 @@ var tokenMap = [...]string{
 
 type Keyword struct {
 	Token Token
-
 }
 
 var keywordMap = map[string]Keyword{
@@ -354,7 +355,6 @@ func (token Token) ToString() string {
 	// Return a generic token
 	return "token(" + strconv.Itoa(int(token)) + ")"
 }
-
 
 func StringIsKeyword(string string) Token {
 	if keyword, exists := keywordMap[string]; exists {

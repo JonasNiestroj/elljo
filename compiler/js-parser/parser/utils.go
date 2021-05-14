@@ -27,6 +27,7 @@ func (self *Parser) ExpectToken(values ...token.Token) int {
 			contains = true
 		}
 	}
+
 	if !contains {
 		self.ErrorUnexpectedToken(self.Token)
 	}
