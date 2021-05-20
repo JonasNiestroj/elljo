@@ -1,18 +1,23 @@
-context('elementVariableRender', () => {
-    beforeEach(() => {
-        cy.exec('../main cypress/fixtures/element_variable.jo cypress/fixtures/element_variable_index.html element_variable_output.html')
-        cy.visit('./element_variable_output.html')
+describe('elementVariableRender', () => {
+    beforeEach(async () => {
+        const html = await cy.task("spawnEllJo", { filePath: 'cypress/fixtures/element_variable.jo' })
+        cy.document().invoke({ log: true }, 'write', html)
     })
+    
+    afterEach(() => {
+        cy.visit("index.html")
+    })
+
 
     it('renders empty paragraph', () => {
         cy.get('p').should(($p) => {
             expect($p).to.have.length(1)
-            expect($p).have.text('')
+            expect($p).have.text('Hello world')
         })
     })
 
     it('changes text in paragraph', () => {
-        cy.window().invoke('component.set', {text: 'Hello world'})
-        cy.get('p').should('have.text', 'Hello world')
+        cy.get('button').click()
+        cy.get('p').should('have.text', 'Hello world!')
     })
 })

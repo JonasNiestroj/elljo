@@ -1,3 +1,12 @@
 {{#loop pets as x}}
     <p>{{x}}</p>
 {{/loop}}
+<button $click="add">Add</button>
+
+<script>
+let pets = ['Dog', 'Cat', 'Snake']
+
+const add = () => {
+    pets = [...pets, 'Rabbit']
+}
+</script>

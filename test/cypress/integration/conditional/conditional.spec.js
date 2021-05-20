@@ -1,7 +1,11 @@
-context('conditionalRender', () => {
-    beforeEach(() => {
-        cy.exec('../main cypress/fixtures/conditional.jo cypress/fixtures/conditional_index.html conditional_output.html')
-        cy.visit('./conditional_output.html')
+describe('conditionalRender', () => {
+    beforeEach(async () => {
+        const html = await cy.task("spawnEllJo", { filePath: 'cypress/fixtures/conditional.jo' })
+        cy.document().invoke({ log: true }, 'write', html)
+    })
+
+    afterEach(() => {
+        cy.visit("index.html")
     })
 
     it('renders hello world paragraph', () => {
@@ -16,7 +20,7 @@ context('conditionalRender', () => {
         cy.get('p').should('have.length', 0)
     })
 
-    it('shows on twice click', () => {
+    it('shows on double click', () => {
         cy.get('button').click()
         cy.get('button').click()
         cy.get('p').should('have.length', 1)

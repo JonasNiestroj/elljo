@@ -108,3 +108,6 @@ dist
 .idea/*
 
 /npm/node_modules/
+
+test/cypress/screenshots/
+test/cypress/videos/
