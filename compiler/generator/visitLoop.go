@@ -66,7 +66,7 @@ func (self *Generator) VisitLoop(children parser.Entry, current *Fragment) *Frag
 					this.contexts['$name$'][i] = { $context$: context.$variableName$[i] };
 					iteration.setContext(this.contexts['$name$'][i])
 				}
-				iteration.update($contextChain$, context.$variableName$[i], this.contexts['$name'][i]);
+				iteration.update($contextChain$, context.$variableName$[i], this.contexts['$name$'][i]);
 			}
 			$name$_anchor.parentNode.insertBefore($name$_fragment, $name$_anchor);
 			$name$_iterations.length = context.$variableName$.length;`

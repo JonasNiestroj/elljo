@@ -179,7 +179,7 @@ func (self *Generator) VisitIf(children parser.Entry, current *Fragment) *Fragme
 					}`
 			} else if len(elseIfs) == 0 {
 				updateStatementTemplate += `
-				} else if(!context.$variableName$ && !$name$){
+				} else if(!context.$variableName$ && $name$){
 					$name$.teardown();
 					$name$ = null;
 				}`
