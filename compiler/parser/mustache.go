@@ -16,7 +16,7 @@ func Mustache(parser *Parser) {
 	parser.ReadWhitespace()
 	line := parser.currentLine
 	if parser.Read("/") {
-		ifBlock = nil
+
 		current := parser.Entries[len(parser.Entries)-1]
 
 		expected := ""
@@ -53,7 +53,16 @@ func Mustache(parser *Parser) {
 
 		current.EndIndex = parser.Index
 		length := len(parser.Entries)
-		parser.Entries = parser.Entries[:length-1]
+		subtract := 1
+		if ifBlock != nil {
+			if ifBlock.HasElse {
+				subtract++
+			}
+			subtract += len(ifBlock.ElseIfs)
+		}
+
+		parser.Entries = parser.Entries[:length-subtract]
+		ifBlock = nil
 	} else if parser.Read("#") {
 		expressionType := ""
 		startIndex := parser.Index
