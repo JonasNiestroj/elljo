@@ -104,7 +104,7 @@ func Mustache(parser *Parser) {
 				parser.Error("Else is only allowed after an if or elseif block")
 				return
 			}
-			current.HasElse = true
+			ifBlock.HasElse = true
 			current.EndIndex = parser.Index - 4
 		} else if expressionType == "ElseIfBlock" {
 			current := parser.Entries[len(parser.Entries)-1]
