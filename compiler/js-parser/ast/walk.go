@@ -66,6 +66,7 @@ func Walk(node Node, nodeCallback func(node Node)) {
 	case *IfStatement:
 		nodeCallback(node)
 		Walk(node.Consequent, nodeCallback)
+		Walk(node.Alternate, nodeCallback)
 	case *ArrayLiteral:
 		nodeCallback(node)
 		for _, b := range node.Value {
