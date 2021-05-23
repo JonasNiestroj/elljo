@@ -168,7 +168,11 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 			}
 			component.set = function set (newState, name) {
 				dirtyInState.push(name);
-				oldState = Object.assign({}, state)
+				if(!oldState) {
+					oldState = Object.assign({}, state)
+				} else {
+					oldState[name] = state[name];
+				}
 				Object.assign(state, newState);
 				update()
 			};
