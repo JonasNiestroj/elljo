@@ -1,0 +1,22 @@
+{{#if visible}}
+  <p>Hello world</p>
+{{#elif visible2}}
+  <p>Second world</p>
+{{#else}}
+  <p>Bye world</p>
+{{/if}}
+
+<button $click="toggleVisible">Toggle</button>
+
+<script>
+let visible = false;
+let visible2 = false;
+
+const toggleVisible = () => {
+  if(!visible2) {
+    visible2 = true
+  } else {
+    visible = !visible;
+  }
+}
+</script>

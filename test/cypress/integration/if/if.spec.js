@@ -1,6 +1,6 @@
-describe('conditionalRender', () => {
+describe('ifRender', () => {
     beforeEach(async () => {
-        const html = await cy.task("spawnEllJo", { filePath: 'cypress/fixtures/conditional.jo' })
+        const html = await cy.task("spawnEllJo", { filePath: 'cypress/fixtures/if.jo' })
         cy.document().invoke({ log: true }, 'write', html)
     })
 

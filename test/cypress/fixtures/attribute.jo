@@ -1,0 +1,10 @@
+<p :title="title">Hello world</p>
+<button $click="updateTitle">Update</button>
+
+<script>
+let title = "hello world"
+
+const updateTitle = () => {
+  title = "new world"
+}
+</script>

@@ -1,5 +1,5 @@
 describe('elementRender', () => {
-        beforeEach(async () => {
+    beforeEach(async () => {
         const html = await cy.task("spawnEllJo", { filePath: 'cypress/fixtures/element.jo' })
         cy.document().invoke({ log: true }, 'write', html)
     })
