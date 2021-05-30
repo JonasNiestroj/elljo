@@ -8,11 +8,10 @@ type Renderer struct {
 }
 
 func (self *Generator) CreateRenderer(fragment Fragment) Renderer {
-	template := `const $fragmentName$ = (target, context$anchor$) => {
+	template := `const $fragmentName$ = (target, anchor $updateContextChainParam$) => {
 		$initStatements$
 		return {
-			$context$
-			update: ($contextChain$) => {
+			update: ($updateContextChain$) => {
 				$updateStatements$
 			},
 			teardown: () => {
@@ -22,28 +21,16 @@ func (self *Generator) CreateRenderer(fragment Fragment) Renderer {
 	}`
 	mappings := [][]int{{}}
 
+	updateContextChainParam := fragment.UpdateContextChain
+	if updateContextChainParam != "" {
+		updateContextChainParam = ", " + updateContextChainParam
+	}
+
 	var initStatements []string
 
 	for _, initStatement := range fragment.InitStatements {
 		mappings = append(mappings, initStatement.mappings...)
 		initStatements = append(initStatements, initStatement.source)
-	}
-
-	mappings = append(mappings, []int{})
-
-	anchor := ""
-	if fragment.UseAnchor {
-		anchor = `, anchor`
-	}
-	context := ""
-	if fragment.HasContext {
-		context = `setContext: (context) => {
-			currentContext = context
-		},
-		getContext: () => {
-			return currentContext
-		},`
-		mappings = append(mappings, []int{}, []int{}, []int{}, []int{}, []int{}, []int{})
 	}
 
 	mappings = append(mappings, []int{})
@@ -67,13 +54,13 @@ func (self *Generator) CreateRenderer(fragment Fragment) Renderer {
 	mappings = append(mappings, []int{}, []int{}, []int{})
 
 	variables := map[string]string{
-		"fragmentName":       fragment.Name,
-		"anchor":             anchor,
-		"initStatements":     strings.Join(initStatements, "\n\n"),
-		"context":            context,
-		"contextChain":       strings.Join(fragment.ContextChain, ", "),
-		"updateStatements":   strings.Join(updateStatements, "\n\n"),
-		"teardownStatements": strings.Join(teardownStatements, "\n\n"),
+		"fragmentName":            fragment.Name,
+		"initStatements":          strings.Join(initStatements, "\n\n"),
+		"contextChain":            strings.Join(fragment.ContextChain, ", "),
+		"updateStatements":        strings.Join(updateStatements, "\n\n"),
+		"teardownStatements":      strings.Join(teardownStatements, "\n\n"),
+		"updateContextChain":      fragment.UpdateContextChain,
+		"updateContextChainParam": updateContextChainParam,
 	}
 	renderer := self.BuildString(template, variables)
 

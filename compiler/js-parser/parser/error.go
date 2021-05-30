@@ -1,13 +1,13 @@
 package parser
 
 import (
-	"fmt"
 	"elljo/compiler/js-parser/token"
+	"fmt"
 	"sort"
 )
 
 const (
-	err_UnexpectedToken = "Unexpected token %v"
+	err_UnexpectedToken      = "Unexpected token %v"
 	err_UnexpectedEndOfInput = "Unexpected end of input"
 )
 
@@ -22,7 +22,7 @@ func (self Error) Error() string {
 func (self *Parser) Error(msg string, msgValues ...interface{}) *Error {
 	msg = fmt.Sprintf(msg, msgValues...)
 	self.Errors.Add(msg)
-	return self.Errors[len(self.Errors) - 1]
+	return self.Errors[len(self.Errors)-1]
 }
 
 func (self *Parser) ErrorUnexpected(chr rune) error {
@@ -61,7 +61,7 @@ func (self *ErrorList) Add(msg string) {
 
 func (self *ErrorList) Reset()       { *self = (*self)[0:0] }
 func (self ErrorList) Len() int      { return len(self) }
-func (self ErrorList) Swap(i, j int) {self[i], self[j] = self[j], self[i]}
+func (self ErrorList) Swap(i, j int) { self[i], self[j] = self[j], self[i] }
 func (self ErrorList) Less(i, j int) bool {
 	return false
 }
@@ -77,7 +77,7 @@ func (self ErrorList) Error() string {
 	case 1:
 		return self[0].Error()
 	}
-	return fmt.Sprintf("%s (and %d more errors)", self[0].Error(), len(self) - 1)
+	return fmt.Sprintf("%s (and %d more errors)", self[0].Error(), len(self)-1)
 }
 
 func (self ErrorList) Err() error {

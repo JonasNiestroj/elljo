@@ -28,18 +28,21 @@ func (self *Generator) VisitMustache(parserInstance parser.Parser, children pars
 	for _, declaration := range children.Expression.Body {
 		if id, ok := declaration.(*ast.ExpressionStatement); ok && id != nil {
 			variableName := children.ExpressionSource[id.Index0():id.Index1()]
-			contextVariable := variableName
-			if len(current.ContextChain) == 1 {
-				contextVariable = "context." + contextVariable
+			variable := variableName
+			var updateStatementTemplate string
+			if current.UpdateContextChain != "" {
+				updateStatementTemplate += `if(!$name$_value || $variable$ !== $name$_value) {`
+			} else {
+				updateStatementTemplate += `if((currentComponent.$variable$IsDirty || !$name$_value) && $variable$ !== $name$_value) {`
 			}
-			updateStatementTemplate := `if($variable$ !== $name$_value) {
+			updateStatementTemplate += `
 				$name$_value = $variable$;
 				$name$.data = $name$_value;
 			}`
 
 			variables := map[string]string{
 				"name":     name,
-				"variable": contextVariable,
+				"variable": variable,
 			}
 
 			updateStatement := Statement{

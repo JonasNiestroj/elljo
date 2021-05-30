@@ -15,8 +15,7 @@ func (self *Generator) VisitLoop(children parser.Entry, current *Fragment) *Frag
 	template := `var $name$_anchor = document.createComment('#each $expression$');
 				$target$.appendChild($name$_anchor);
 				var $name$_iterations = [];
-				const $name$_fragment = document.createDocumentFragment();
-				this.contexts['$name$'] = [];`
+				const $name$_fragment = document.createDocumentFragment();`
 	variables := map[string]string{
 		"name":       name,
 		"expression": children.ExpressionSource,
@@ -24,7 +23,7 @@ func (self *Generator) VisitLoop(children parser.Entry, current *Fragment) *Frag
 	}
 	createStatement := Statement{
 		source:   self.BuildString(template, variables),
-		mappings: [][]int{{}, {}, {}, {}, {}},
+		mappings: [][]int{{}, {}, {}, {}},
 	}
 
 	current.InitStatements = append(current.InitStatements, createStatement)
@@ -44,32 +43,29 @@ func (self *Generator) VisitLoop(children parser.Entry, current *Fragment) *Frag
 		if id, ok := declaration.(*ast.ExpressionStatement); ok && id != nil {
 			variableName := children.ExpressionSource[id.Index0():id.Index1()]
 
-			updateStatementTemplate := `if(oldState && oldState.$variableName$ && oldState.$variableName$.length > context.$variableName$.length) {
-				var arrayDiff = this.utils.diffArray(context.$variableName$.length > oldState.$variableName$.length ? 
-				context.$variableName$ : oldState.$variableName$, context.$variableName$.length > oldState.$variableName$.length ?
-				oldState.$variableName$ : context.$variableName$);
-				for(var i = 0; i < arrayDiff.length; i++) {
-					$name$_iterations[arrayDiff[i].index].teardown();
+			updateStatementTemplate := `
+				const oldState = currentComponent.oldState;
+				if(oldState && oldState.$variableName$ && oldState.$variableName$.length > $variableName$.length) {
+					var arrayDiff = this.utils.diffArray($variableName$.length > oldState.$variableName$.length ? 
+					$variableName$ : oldState.$variableName$, $variableName$.length > oldState.$variableName$.length ?
+					oldState.$variableName$ : $variableName$);
+					for(var i = 0; i < arrayDiff.length; i++) {
+						$name$_iterations[arrayDiff[i].index].teardown();
+					}
+					for(var i = 0; i < arrayDiff.length; i++) {
+						$name$_iterations.splice(arrayDiff[i].index, 1)
+					}
 				}
-				for(var i = 0; i < arrayDiff.length; i++) {
-					$name$_iterations.splice(arrayDiff[i].index, 1)
+				for(var i = 0; i < $variableName$.length; i++) {
+					if(!$name$_iterations[i]) {
+						$name$_iterations[i] = $renderer$($name$_fragment, $name$_anchor, $variableName$[i]);
+						$name$_iterations[i].update($variableName$[i]);
+					}
+					const iteration = $name$_iterations[i];
+					iteration.update(this.$variableName$[i]);
 				}
-			}
-			for(var i = 0; i < context.$variableName$.length; i++) {
-				if(!$name$_iterations[i]) {
-					this.contexts['$name$'][i] = { $context$: context.$variableName$[i] };
-					$name$_iterations[i] = $renderer$($name$_fragment, this.contexts['$name$'][i]);
-					$name$_iterations[i].update($contextChain$, context.$variableName$[i], this.contexts['$name$'][i]);
-				}
-				const iteration = $name$_iterations[i];
-				if(iteration.getContext() !== this.contexts['$name$'][i]) {
-					this.contexts['$name$'][i] = { $context$: context.$variableName$[i] };
-					iteration.setContext(this.contexts['$name$'][i])
-				}
-				iteration.update($contextChain$, context.$variableName$[i], this.contexts['$name$'][i]);
-			}
-			$name$_anchor.parentNode.insertBefore($name$_fragment, $name$_anchor);
-			$name$_iterations.length = context.$variableName$.length;`
+				$name$_anchor.parentNode.insertBefore($name$_fragment, $name$_anchor);
+				$name$_iterations.length = $variableName$.length;`
 
 			variables := map[string]string{
 				"variableName": variableName,
@@ -82,7 +78,7 @@ func (self *Generator) VisitLoop(children parser.Entry, current *Fragment) *Frag
 			updateStatement := Statement{
 				source: self.BuildString(updateStatementTemplate, variables),
 				mappings: [][]int{{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {},
-					{}, {}, {}, {}, {}, {}, {}, {}, {}, {}},
+					{}, {}, {}, {}, {}, {}},
 			}
 
 			current.UpdateStatments = append(current.UpdateStatments, updateStatement)
@@ -90,11 +86,11 @@ func (self *Generator) VisitLoop(children parser.Entry, current *Fragment) *Frag
 	}
 	current.ContextChain = append(current.ContextChain, children.Context)
 	return &Fragment{
-		UseAnchor:          true,
+		UseAnchor:          false,
 		Name:               renderer,
 		Target:             "target",
 		ContextChain:       current.ContextChain,
-		InitStatements:     []Statement{{source: "var currentContext = context;", mappings: [][]int{{}}}},
+		InitStatements:     []Statement{},
 		UpdateStatments:    []Statement{},
 		TeardownStatements: []Statement{},
 		Counters: FragmentCounter{
@@ -102,8 +98,9 @@ func (self *Generator) VisitLoop(children parser.Entry, current *Fragment) *Frag
 			Anchor:  0,
 			Element: 0,
 		},
-		Parent:     current,
-		HasContext: true,
+		Parent:             current,
+		HasContext:         true,
+		UpdateContextChain: children.Context,
 	}
 }
 

@@ -21,7 +21,8 @@ func (self *Generator) VisitElse(children parser.Entry, current *Fragment) *Frag
 			Anchor:  0,
 			Element: 0,
 		},
-		Parent: current,
+		Parent:             current,
+		UpdateContextChain: current.UpdateContextChain,
 	}
 }
 

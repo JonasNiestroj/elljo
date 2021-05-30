@@ -40,25 +40,15 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 			if attribute.IsExpression {
 				if attribute.IsCall {
 					attributeCreateStatement := `var $name$_attr_$index$ = () => {
-						$context$
 						return $value$
 					};
 					$name$.setAttribute("$attributeName$", $name$_attr_$index$());`
 
 					mappings = append(mappings, []int{}, []int{}, []int{}, []int{}, []int{})
 
-					contextString := ""
-					for _, context := range current.ContextChain {
-						if context != "context" && context != "dirtyInState" && context != "oldState" {
-							contextString += `var ` + context + ` = currentContext.` + context + `;`
-							mappings = append(mappings, []int{})
-						}
-					}
-
 					variables := map[string]string{
 						"name":          name,
 						"index":         strconv.Itoa(attributeIndex),
-						"context":       contextString,
 						"value":         attribute.Value,
 						"attributeName": attribute.Name,
 					}
@@ -82,8 +72,8 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 					}
 					mappings = append(mappings, []int{0, 0, children.Line, 0})
 					createStatement += self.BuildString(variableCreateStatement, variables)
-					variableUpdateStatementSource := `if(dirtyInState.includes("$value$")) {
-								$name$.setAttribute("$attributeName$", context.$value$);
+					variableUpdateStatementSource := `if(currentComponent.$value$IsDirty) {
+								$name$.setAttribute("$attributeName$", $value$);
 							}`
 
 					variableUpdateStatement := Statement{
@@ -97,21 +87,13 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 			} else if attribute.IsEvent {
 				if attribute.IsCall {
 					attributeCreateStatement := `$name$.addEventListener("$attributeName$", () => {
-						$context$
 						$value$
 					});`
 					mappings = append(mappings, []int{}, []int{}, []int{}, []int{})
-					contextTemplate := ""
-					for _, context := range current.ContextChain {
-						if context != "context" && context != "dirtyInState" && context != "oldState" {
-							contextTemplate += `var ` + context + ` = currentContext.` + context + `;\n`
-							mappings = append(mappings, []int{})
-						}
-					}
 					variables := map[string]string{
-						"context":       contextTemplate,
 						"attributeName": attribute.Name,
 						"name":          name,
+						"value":         attribute.Value,
 					}
 					createStatement += self.BuildString(attributeCreateStatement, variables)
 				} else {
@@ -155,6 +137,7 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 		UseAnchor:          current.UseAnchor,
 		Parent:             current,
 		IsComponent:        isComponent,
+		UpdateContextChain: current.UpdateContextChain,
 	}
 }
 

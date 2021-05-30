@@ -10,6 +10,6 @@
 let visible = true;
 
 const toggleVisible = () => {
-  visible = !visible;
+  this.visible = !this.visible;
 }
 </script>

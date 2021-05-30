@@ -13,10 +13,10 @@ let visible = false;
 let visible2 = false;
 
 const toggleVisible = () => {
-  if(!visible2) {
-    visible2 = true
+  if(!this.visible2) {
+    this.visible2 = true
   } else {
-    visible = !visible;
+    this.visible = !visible;
   }
 }
 </script>

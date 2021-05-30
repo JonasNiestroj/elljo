@@ -469,8 +469,7 @@ func (self *Parser) ParseLeftHandSideExpressionAllowCall() ast.Expression {
 	defer func() {
 		self.Scope.AllowIn = allowIn
 	}()
-
-	if self.Token == token.LEFT_PARENTHESIS {
+	if self.Token == token.LEFT_PARENTHESIS && self.LastToken == token.ASSIGN {
 		self.NextToken()
 		return self.ParseArrowFunction()
 	}

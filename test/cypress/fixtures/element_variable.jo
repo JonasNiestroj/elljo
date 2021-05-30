@@ -5,6 +5,6 @@
 let text = "Hello world"
 
 const setText = () => {
-  text = "Hello world!"
+  this.text = "Hello world!"
 }
 </script>

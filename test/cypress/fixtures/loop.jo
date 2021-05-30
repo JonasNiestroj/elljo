@@ -7,6 +7,6 @@
 let pets = ['Dog', 'Cat', 'Snake']
 
 const add = () => {
-    pets = [...pets, 'Rabbit']
+    this.pets = [...this.pets, 'Rabbit']
 }
 </script>

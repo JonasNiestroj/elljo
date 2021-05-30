@@ -92,8 +92,6 @@ func (self *Generator) VisitIf(children parser.Entry, current *Fragment) *Fragme
 			if(` + elseName + `) ` + elseName + `.teardown();`
 	}
 
-	println(teardownStatementSource)
-
 	teardownStatement := Statement{
 		source:   teardownStatementSource,
 		mappings: [][]int{{}},
@@ -103,13 +101,13 @@ func (self *Generator) VisitIf(children parser.Entry, current *Fragment) *Fragme
 	for _, declaration := range children.Expression.Body {
 		if id, ok := declaration.(*ast.ExpressionStatement); ok && id != nil {
 			variableName := children.ExpressionSource[id.Index0():id.Index1()]
-			updateStatementTemplate := `if(context.$variableName$){
+			updateStatementTemplate := `if(this.$variableName$){
 				if(!$name$) $name$ = $renderer$($target$, $name$_anchor);
 			`
 
 			if hasElse && len(elseIfs) == 0 {
 				updateStatementTemplate += `
-						$name$.update(context, dirtyInState, oldState);
+						$name$.update();
 						if($elseName$) { 
 							$elseName$.teardown();
 							$elseName$ = null;
@@ -137,7 +135,7 @@ func (self *Generator) VisitIf(children parser.Entry, current *Fragment) *Fragme
 					}`
 				for _, elseIf := range elseIfs {
 					updateStatementTemplate += `
-						else if(context.` + elseIf.variable + `) {
+						else if(this.` + elseIf.variable + `) {
 							if(!` + elseIf.name + `) ` + elseIf.name + ` = ` + elseIf.renderer + `($target$, ` + elseIf.name + `_anchor);
 						`
 					for _, elseIfInner := range elseIfs {
@@ -162,7 +160,7 @@ func (self *Generator) VisitIf(children parser.Entry, current *Fragment) *Fragme
 							$name$.teardown();
 							$name$ = null;
 						}
-					` + elseIf.name + `.update(context, dirtyInState, oldState);
+					` + elseIf.name + `.update();
 					}`
 				}
 			}
@@ -175,11 +173,11 @@ func (self *Generator) VisitIf(children parser.Entry, current *Fragment) *Fragme
 							$name$.teardown();
 							$name$ = null;
 						}
-						$elseName$.update(context, dirtyInState, oldState);
+						$elseName$.update();
 					}`
 			} else if len(elseIfs) == 0 {
 				updateStatementTemplate += `
-				} else if(!context.$variableName$ && $name$){
+				} else if(!this.$variableName$ && $name$){
 					$name$.teardown();
 					$name$ = null;
 				}`
@@ -216,7 +214,8 @@ func (self *Generator) VisitIf(children parser.Entry, current *Fragment) *Fragme
 			Anchor:  0,
 			Element: 0,
 		},
-		Parent: current,
+		Parent:             current,
+		UpdateContextChain: current.UpdateContextChain,
 	}
 }
 

@@ -15,6 +15,7 @@ type Parser struct {
 	Offset            int
 	Index             int
 	Token             token.Token
+	LastToken         token.Token
 	Literal           string
 	ParsedLiteral     unistring.String
 	Scope             *Scope
@@ -48,6 +49,7 @@ func (self *Parser) Parse() (*ast.Program, error) {
 }
 
 func (self *Parser) NextToken() {
+	self.LastToken = self.Token
 	self.Token, self.Literal, self.ParsedLiteral, self.Index = self.Scan()
 }
 

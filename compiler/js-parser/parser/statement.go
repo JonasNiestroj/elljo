@@ -157,18 +157,38 @@ func (self *Parser) ParseFunctionParameterList() *ast.ParameterList {
 		if self.Token != token.IDENTIFIER {
 			self.ExpectToken(token.IDENTIFIER)
 		} else {
-			list = append(list, self.ParseIdentifier())
+			identifier := self.ParseIdentifier()
+			list = append(list, identifier)
 		}
 		if self.Token != token.RIGHT_PARENTHESIS {
 			self.ExpectToken(token.COMMA)
 		}
 	}
 	closing := self.ExpectToken(token.RIGHT_PARENTHESIS)
-
 	return &ast.ParameterList{
 		Opening: opening,
 		List:    list,
 		Closing: closing,
+	}
+}
+
+func (self *Parser) ParseFunctionParameterListIdentifiers() *ast.ParameterList {
+	var list []*ast.Identifier
+	for self.Token != token.RIGHT_PARENTHESIS && self.Token != token.EOF {
+		if self.Token != token.IDENTIFIER {
+			self.ExpectToken(token.IDENTIFIER)
+		} else {
+			identifier := self.ParseIdentifier()
+			list = append(list, identifier)
+		}
+		if self.Token != token.RIGHT_PARENTHESIS {
+			self.ExpectToken(token.COMMA)
+		}
+	}
+	return &ast.ParameterList{
+		Opening: self.Index - 1,
+		List:    list,
+		Closing: self.Index + 1,
 	}
 }
 
@@ -211,8 +231,9 @@ func (self *Parser) ParseFunction(declaration bool) *ast.FunctionLiteral {
 
 func (self *Parser) ParseArrowFunction() *ast.FunctionLiteral {
 	node := &ast.FunctionLiteral{}
+
 	if self.Token != token.RIGHT_PARENTHESIS {
-		node.ParameterList = self.ParseFunctionParameterList()
+		node.ParameterList = self.ParseFunctionParameterListIdentifiers()
 	}
 	self.NextToken()
 	self.ExpectToken(token.ARROW_FUNCTION)

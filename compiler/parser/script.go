@@ -8,9 +8,9 @@ import (
 )
 
 var (
-	variables []string
-	assigns   []*ast.AssignExpression
-	imports   []*ast.ImportStatement
+	variables     []string
+	imports       []*ast.ImportStatement
+	dotExpression *ast.DotExpression
 )
 
 func Spaces(count int) string {
@@ -23,11 +23,22 @@ func Spaces(count int) string {
 }
 
 func Walk(node ast.Node) {
-	if id, ok := node.(*ast.AssignExpression); ok && id != nil {
-		assigns = append(assigns, id)
-	}
 	if id, ok := node.(*ast.ImportStatement); ok && id != nil {
 		imports = append(imports, id)
+	}
+	if id, ok := node.(*ast.ThisExpression); ok && id != nil {
+		if dotExpression != nil {
+			variables = append(variables, dotExpression.Identifier.Name.String())
+		}
+	}
+	dotExpression = nil
+	if id, ok := node.(*ast.DotExpression); ok && id != nil {
+		for _, variable := range variables {
+			if variable == id.Identifier.Name.String() {
+				return
+			}
+		}
+		dotExpression = id
 	}
 }
 
@@ -49,17 +60,11 @@ func ReadScript(parserInstance *Parser, start int) ScriptSource {
 	ast.Walk(program, Walk)
 
 	for _, declaration := range program.DeclarationList {
-		if id, ok := declaration.(*ast.VariableDeclaration); ok && id != nil {
-			for _, item := range id.List {
-				variables = append(variables, item.Name.String())
-			}
-		}
+
 		if id, ok := declaration.(*ast.FunctionDeclaration); ok && id != nil {
 			ast.Walk(id.Function, Walk)
 		}
 	}
-
-	indexToAdd := 0
 
 	var importNames []string
 
@@ -74,19 +79,12 @@ func ReadScript(parserInstance *Parser, start int) ScriptSource {
 		importNames = append(importNames, importStatement.Name)
 	}
 
-	for _, assignExpression := range assigns {
-		if identifier, ok := assignExpression.Left.(*ast.Identifier); ok && identifier != nil {
-			parserInstance.Template = parserInstance.Template[:assignExpression.Index1()+indexToAdd] + `;currentComponent.set({` + identifier.Name.String() + `}, "` + identifier.Name.String() + `");` + parserInstance.Template[int(assignExpression.Index1())+indexToAdd:]
-			indexToAdd += 30 + len(identifier.Name)*2
-			parserInstance.Index += 30 + len(identifier.Name)*2
-		}
-	}
-
 	return ScriptSource{
 		StartIndex: start,
 		EndIndex:   parserInstance.Index,
 		Program:    program,
 		Variables:  variables,
 		Imports:    importNames,
+		Source:     source,
 	}
 }

@@ -28,6 +28,7 @@ type ScriptSource struct {
 	Program    *ast.Program
 	Variables  []string
 	Imports    []string
+	Source     string
 }
 
 type Parser struct {

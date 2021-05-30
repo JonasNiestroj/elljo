@@ -23,7 +23,8 @@ func (self *Generator) VisitElseIf(children parser.Entry, current *Fragment) *Fr
 			Anchor:  0,
 			Element: 0,
 		},
-		Parent: current,
+		Parent:             current,
+		UpdateContextChain: current.UpdateContextChain,
 	}
 }
 
