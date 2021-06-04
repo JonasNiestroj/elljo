@@ -45,6 +45,7 @@ type Generator struct {
 type GeneratorOutput struct {
 	Output    string `json:"output"`
 	Sourcemap string `json:"sourcemap"`
+	Css       string `json:"css"`
 }
 
 func (self *Generator) Visit(parser parser.Parser, children parser.Entry, current *Fragment, template string) {
@@ -308,5 +309,11 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 	}
 	export default component`
 
-	return GeneratorOutput{Output: code, Sourcemap: sourcemap.CreateSourcemap(mappingsStrings)}
+	style := parser.StyleSource.Source
+
+	for _, rule := range parser.StyleSource.Rules {
+		style = strings.Replace(style, rule.Selector, rule.Selector+"[scope-"+parser.StyleSource.Id+"]", 1)
+	}
+
+	return GeneratorOutput{Output: code, Sourcemap: sourcemap.CreateSourcemap(mappingsStrings), Css: style}
 }

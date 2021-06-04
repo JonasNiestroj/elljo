@@ -31,11 +31,20 @@ type ScriptSource struct {
 	Source     string
 }
 
+type StyleSource struct {
+	StartIndex int
+	EndIndex   int
+	Rules      []Rule
+	Source     string
+	Id         string
+}
+
 type Parser struct {
 	Index              int
 	Template           string
 	Entries            []*Entry
 	ScriptSource       ScriptSource
+	StyleSource        StyleSource
 	currentLine        int
 	Errors             []Error
 	PossibleErrorIndex int

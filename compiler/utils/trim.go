@@ -13,7 +13,7 @@ func TrimStart(str string) string {
 }
 
 func TrimEnd(str string) string {
-	index := len(str)
+	index := len(str) - 1
 	currentChar := string(str[index])
 
 	for currentChar == " " {
@@ -21,5 +21,5 @@ func TrimEnd(str string) string {
 		currentChar = string(str[index])
 	}
 
-	return str[:index]
+	return str[:index+1]
 }

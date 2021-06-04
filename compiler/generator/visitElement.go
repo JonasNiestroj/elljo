@@ -116,6 +116,19 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 			mappings: mappings,
 		})
 
+		if parser.StyleSource.Id != "" {
+			scopeStatement := `$name$.setAttribute("$id$", "");`
+			mappings = append(mappings, []int{})
+			variables := map[string]string{
+				"id":   "scope-" + parser.StyleSource.Id,
+				"name": name,
+			}
+			current.InitStatements = append(current.InitStatements, Statement{
+				source:   self.BuildString(scopeStatement, variables),
+				mappings: mappings,
+			})
+		}
+
 		removeStatementSource := name + ".parentNode.removeChild(" + name + ")"
 
 		removeStatement := Statement{

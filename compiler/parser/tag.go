@@ -138,6 +138,11 @@ func Tag(parser *Parser) {
 		if name == "script" {
 			parser.ScriptSource = ReadScript(parser, parser.Index)
 		}
+
+		if name == "style" {
+			parser.StyleSource = ReadStyle(parser, parser.Index)
+		}
+		return
 	}
 
 	entry := &Entry{

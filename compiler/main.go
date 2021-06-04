@@ -45,6 +45,13 @@ func main() {
 		panic(err)
 	}
 	output := strings.Replace(string(index), "{SCRIPT}", generated.Output, 1)
+	if generated.Css != "" {
+		cssTemplate := `
+			<style>
+				` + generated.Css + `
+			</style>`
+		output = strings.Replace(output, "{STYLE}", cssTemplate, 1)
+	}
 	ioutil.WriteFile(os.Args[3], []byte(output), 0644)
 
 	if len(os.Args) > 4 {

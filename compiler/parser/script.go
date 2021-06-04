@@ -79,9 +79,11 @@ func ReadScript(parserInstance *Parser, start int) ScriptSource {
 		importNames = append(importNames, importStatement.Name)
 	}
 
+	end := parserInstance.Index
+	parserInstance.Index += 9
 	return ScriptSource{
 		StartIndex: start,
-		EndIndex:   parserInstance.Index,
+		EndIndex:   end,
 		Program:    program,
 		Variables:  variables,
 		Imports:    importNames,
