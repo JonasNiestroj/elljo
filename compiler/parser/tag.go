@@ -131,7 +131,6 @@ func Tag(parser *Parser) {
 	attributes := ReadAttributes(parser)
 
 	parser.ReadWhitespace()
-
 	if name == "script" || name == "style" {
 		parser.Read(">")
 
@@ -140,7 +139,13 @@ func Tag(parser *Parser) {
 		}
 
 		if name == "style" {
-			parser.StyleSource = ReadStyle(parser, parser.Index)
+			isGlobal := false
+			for _, attribute := range attributes {
+				if attribute.Name == "global" {
+					isGlobal = true
+				}
+			}
+			parser.StyleSource = ReadStyle(parser, parser.Index, isGlobal)
 		}
 		return
 	}
