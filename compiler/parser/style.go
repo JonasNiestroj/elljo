@@ -12,6 +12,7 @@ func ReadStyle(parserInstance *Parser, start int) StyleSource {
 
 	source := Spaces(styleStart) + parserInstance.Template[styleStart:parserInstance.Index]
 	cssResult := ParseStyleSheet(source)
+
 	parserInstance.Index += 8
 	return StyleSource{
 		StartIndex: start,

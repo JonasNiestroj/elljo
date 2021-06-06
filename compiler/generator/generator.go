@@ -310,9 +310,10 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 	export default component`
 
 	style := parser.StyleSource.Source
-
+	indexToAdd := 0
 	for _, rule := range parser.StyleSource.Rules {
-		style = strings.Replace(style, rule.Selector, rule.Selector+"[scope-"+parser.StyleSource.Id+"]", 1)
+		style = style[0:rule.StartIndex+indexToAdd] + rule.Selector + "[scope-" + parser.StyleSource.Id + "]" + style[rule.EndIndex+indexToAdd:]
+		indexToAdd += 8 + len(parser.StyleSource.Id)
 	}
 
 	return GeneratorOutput{Output: code, Sourcemap: sourcemap.CreateSourcemap(mappingsStrings), Css: style}

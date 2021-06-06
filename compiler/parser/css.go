@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"elljo/compiler/utils"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -31,25 +30,34 @@ func ParseStyleSheet(source string) Result {
 
 func (self *CSSParser) ParseStyleSheet() Result {
 	result := Result{}
+	start := self.Index
 	for {
-		if self.Index == self.Length-1 {
+		if self.Index == self.Length {
 			break
 		}
+
+		self.read()
 		self.skipWhiteSpace()
-		start := self.Index
-		selector := self.readUntil("{")
-		self.readUntil("}")
-		end := self.Index
-		selector = utils.TrimEnd(selector)
-		selector = utils.TrimStart(selector)
-		rule := Rule{
-			StartIndex: start,
-			EndIndex:   end,
-			Selector:   selector,
+		if self.Char == '(' {
+			self.readUntil(")")
+		} else if self.Char == '[' {
+			self.readUntil("]")
 		}
-		result.Rules = append(result.Rules, rule)
-		// To read }
-		self.Index++
+
+		if self.Char == ',' || self.Char == '{' {
+			selector := self.Template[start : self.Index-1]
+			selector = strings.TrimRight(selector, " ")
+			result.Rules = append(result.Rules, Rule{
+				StartIndex: start,
+				EndIndex:   self.Index - 1,
+				Selector:   selector,
+			})
+
+			if self.Char == '{' {
+				self.readUntil("}")
+			}
+			start = self.Index
+		}
 	}
 	return result
 }
