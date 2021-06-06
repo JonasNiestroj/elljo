@@ -1,0 +1,12 @@
+<p class="test">Hello world</p>
+<p class="test2">Hello world2</p>
+
+<script>
+
+</script>
+
+<style global>
+    .test, .test2 {
+        color: red;
+    }
+</style>
