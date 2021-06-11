@@ -27,7 +27,7 @@ type ScriptSource struct {
 	EndIndex   int
 	Program    *ast.Program
 	Variables  []string
-	Imports    []string
+	Imports    []Import
 	Source     string
 }
 

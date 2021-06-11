@@ -10,7 +10,7 @@ func ReadStyle(parserInstance *Parser, start int, isGlobal bool) StyleSource {
 	pattern, _ := regexp.Compile("</style>")
 	parserInstance.ReadUntil(pattern)
 
-	source := Spaces(styleStart) + parserInstance.Template[styleStart:parserInstance.Index]
+	source := parserInstance.Template[styleStart:parserInstance.Index]
 	cssResult := Result{}
 
 	// Only parse the stylesheet if we are in a scoped context

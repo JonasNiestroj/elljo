@@ -175,7 +175,14 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 			currentComponent.` + variable + `IsDirty = false;`
 	}
 
-	code := `var component = function(options) {` + js + variables +
+	code := ""
+
+	for _, importVar := range parser.ScriptSource.Imports {
+		code += importVar.Source + `
+`
+	}
+
+	code += `var component = function(options) {` + js + variables +
 		`; var currentComponent = null;
 		` + strings.Join(renderersSources, "\n") +
 		`
@@ -201,7 +208,7 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 				mainFragment = null;
 				state = {};
 			};
-			this.contexts = [];
+
         	this.utils = { diffArray: function diffArray(one, two) {
                 if (!Array.isArray(two)) {
                     return one.slice();

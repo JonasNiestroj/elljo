@@ -12,12 +12,12 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 
 	isComponent := false
 	for _, componentImport := range parser.ScriptSource.Imports {
-		if componentImport == children.Name {
+		if componentImport.Name == children.Name {
 			isComponent = true
 		}
 	}
 	if isComponent {
-		template := "$name$({target: $target$});"
+		template := "new $name$({target: $target$});"
 		variables := map[string]string{
 			"name":   children.Name,
 			"target": current.Target,

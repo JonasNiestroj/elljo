@@ -7,20 +7,16 @@ import (
 	"strings"
 )
 
+type Import struct {
+	Source string
+	Name   string
+}
+
 var (
 	variables     []string
 	imports       []*ast.ImportStatement
 	dotExpression *ast.DotExpression
 )
-
-func Spaces(count int) string {
-	result := ""
-	for count != 0 {
-		result += " "
-		count--
-	}
-	return result
-}
 
 func Walk(node ast.Node) {
 	if id, ok := node.(*ast.ImportStatement); ok && id != nil {
@@ -47,7 +43,7 @@ func ReadScript(parserInstance *Parser, start int) ScriptSource {
 	pattern, _ := regexp.Compile("</script>")
 	parserInstance.ReadUntil(pattern)
 
-	source := Spaces(scriptStart) + parserInstance.Template[scriptStart:parserInstance.Index]
+	source := parserInstance.Template[scriptStart:parserInstance.Index]
 
 	jsParserInstance := parser.NewParser(source, 0)
 
@@ -66,17 +62,21 @@ func ReadScript(parserInstance *Parser, start int) ScriptSource {
 		}
 	}
 
-	var importNames []string
-
+	var importNames []Import
+	indexToRemove := 0
 	for _, importStatement := range imports {
 		// TODO: Improve .jo check
 		if !strings.HasSuffix(importStatement.Source, ".jo'") && !strings.HasSuffix(importStatement.Source, ".jo\"") {
 			continue
 		}
-		/*parserInstance.Template = parserInstance.Template[:importStatement.Index0()] + parserInstance.Template[importStatement.Index1():]
-		indexToAdd -= int(importStatement.Index1()) - int(importStatement.Index0())
-		parserInstance.Index -= int(importStatement.Index1()) - int(importStatement.Index0())*/
-		importNames = append(importNames, importStatement.Name)
+		importVar := Import{
+			Source: source[importStatement.Index0()-indexToRemove : importStatement.Index1()-indexToRemove],
+			Name:   importStatement.Name,
+		}
+		source = source[:importStatement.Index0()-indexToRemove] +
+			source[importStatement.Index1()-indexToRemove:]
+		indexToRemove += int(importStatement.Index1()) - int(importStatement.Index0())
+		importNames = append(importNames, importVar)
 	}
 
 	end := parserInstance.Index
