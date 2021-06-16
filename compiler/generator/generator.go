@@ -212,7 +212,7 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 `
 	}
 
-	code += `var component = function(options, props) {
+	code += `var component = function(options, props, events) {
 		let currentComponent = null;` + js + variables +
 		`; 
 		` + strings.Join(renderersSources, "\n") +
@@ -225,6 +225,17 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 
 			component.$props = {};
 			` + properties + `
+
+			component.$events = {}
+			if(events) {
+				Object.keys(events).forEach(event => {
+					if(!component.$events[event]) {
+						component.$events[event] = [events[event]]
+					} else {
+						component.$events[event].push(events[event])
+					}
+				})
+			}
 
 			component.queueUpdate = function performUpdate() {
 				if(!updating) {
@@ -242,7 +253,16 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 				mainFragment = null;
 				state = {};
 			};
-
+			this.$event = function(name) {
+				var callbacks = component.$events[name]
+				if(callbacks) {
+					const args = []
+					for(let i = 1; i < arguments.length; i++) {
+						args.push(arguments[i])
+					}
+					callbacks.forEach(callback => callback(...args))
+				}
+			}
         	this.utils = { diffArray: function diffArray(one, two) {
                 if (!Array.isArray(two)) {
                     return one.slice();
@@ -338,14 +358,15 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 
         	const propertyNames = Object.getOwnPropertyNames(this)
 
-        	propertyNames.forEach(property => {
+			for(let i = 0; i < propertyNames.length; i++) {
+				const property = propertyNames[i]
             	if(Array.isArray(this[property])) {
                 	patchArray(this[property], property)
 					new Observer(this[property], property)
             	} else {
             	    new Observer(this[property], property)
                 }
-        	})
+			}
 
 			return component;
 	}

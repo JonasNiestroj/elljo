@@ -28,6 +28,7 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 		}
 		self.componentCounter++
 		props := ""
+		events := ""
 		for _, attribute := range children.Attributes {
 			if !attribute.IsEvent {
 				if props != "" {
@@ -38,11 +39,17 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 				if !attribute.IsCall {
 					componentProperties.Properties[attribute.Value] = attribute.Name
 				}
+			} else {
+				if events != "" {
+					events += ", '" + attribute.Name + "': " + attribute.Value
+				} else {
+					events += "'" + attribute.Name + "': " + attribute.Value
+				}
 			}
 		}
 		self.componentProperties = append(self.componentProperties, componentProperties)
 		createTemplate := `this['component-` + strconv.Itoa(componentProperties.Index) +
-			`'] = new $name$({target: $target$}, {` + props + `});`
+			`'] = new $name$({target: $target$}, {` + props + `}, {` + events + `});`
 		variables := map[string]string{
 			"name":   children.Name,
 			"target": current.Target,

@@ -19,6 +19,7 @@ type Property struct {
 
 var (
 	variables     []string
+	thisVariables []string
 	imports       []*ast.ImportStatement
 	dotExpression *ast.DotExpression
 	properties    []Property
@@ -30,17 +31,26 @@ func Walk(node ast.Node) {
 	}
 	if id, ok := node.(*ast.ThisExpression); ok && id != nil {
 		if dotExpression != nil {
-			variables = append(variables, dotExpression.Identifier.Name.String())
+			thisVariables = append(thisVariables, dotExpression.Identifier.Name.String())
 		}
 	}
+
 	dotExpression = nil
 	if id, ok := node.(*ast.DotExpression); ok && id != nil {
-		for _, variable := range variables {
+		for _, variable := range thisVariables {
 			if variable == id.Identifier.Name.String() {
 				return
 			}
 		}
 		dotExpression = id
+	}
+
+	if id, ok := node.(*ast.VariableStatement); ok && id != nil {
+		for _, variable := range id.List {
+			if id, ok := variable.(*ast.VariableExpression); ok && id != nil {
+				variables = append(variables, id.Name.String())
+			}
+		}
 	}
 
 	if expression, ok := node.(*ast.ExportStatement); ok && expression != nil {
@@ -107,13 +117,32 @@ func ReadScript(parserInstance *Parser, start int) ScriptSource {
 		variables = append(variables, export.Name)
 	}
 
+	var usedVariables []string
+
+	for _, thisVariable := range thisVariables {
+		contains := false
+		for _, variable := range variables {
+			if variable == thisVariable {
+				contains = true
+			}
+		}
+
+		if contains {
+			usedVariables = append(usedVariables, thisVariable)
+		}
+	}
+
+	for _, properties := range properties {
+		usedVariables = append(usedVariables, properties.Name)
+	}
+
 	end := parserInstance.Index
 	parserInstance.Index += 9
 	return ScriptSource{
 		StartIndex: start,
 		EndIndex:   end,
 		Program:    program,
-		Variables:  variables,
+		Variables:  usedVariables,
 		Imports:    importNames,
 		Source:     source,
 		Properties: propertyNames,
