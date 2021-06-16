@@ -83,5 +83,7 @@ func Walk(node Node, nodeCallback func(node Node)) {
 		Walk(node.Argument, nodeCallback)
 	case *ThisExpression:
 		nodeCallback(node)
+	case *ExportStatement:
+		nodeCallback(node)
 	}
 }

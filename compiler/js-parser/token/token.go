@@ -116,6 +116,7 @@ const (
 	INSTANCEOF
 	IMPORT
 	IMPORTFROM
+	EXPORT
 	lastKeyword
 )
 
@@ -210,6 +211,7 @@ var tokenMap = [...]string{
 	INSTANCEOF:                  "instanceof",
 	IMPORT:                      "import",
 	IMPORTFROM:                  "from",
+	EXPORT:                      "export",
 }
 
 type Keyword struct {
@@ -308,7 +310,7 @@ var keywordMap = map[string]Keyword{
 		Token: KEYWORD,
 	},
 	"export": {
-		Token: KEYWORD,
+		Token: EXPORT,
 	},
 	"extends": {
 		Token: KEYWORD,

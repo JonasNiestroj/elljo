@@ -3,6 +3,7 @@ package generator
 import (
 	"elljo/compiler/parser"
 	"elljo/compiler/sourcemap"
+	"strconv"
 	"strings"
 )
 
@@ -34,12 +35,14 @@ type Statement struct {
 }
 
 type Generator struct {
-	ifCounter     int
-	elseCounter   int
-	elseIfCounter int
-	eachCounter   int
-	textCounter   int
-	renderers     []Renderer
+	ifCounter           int
+	elseCounter         int
+	elseIfCounter       int
+	eachCounter         int
+	textCounter         int
+	componentCounter    int
+	renderers           []Renderer
+	componentProperties []ComponentProperties
 }
 
 type GeneratorOutput struct {
@@ -139,7 +142,6 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 	for i := 0; i < len(mappings); i++ {
 		mapping := mappings[i]
 		if len(mapping) > 0 {
-
 			if len(lastLine) != 0 {
 				copy := mapping[2]
 				mapping[2] = mapping[2] - lastLine[2]
@@ -157,6 +159,13 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 	setIsDirtyFalse := ""
 
 	for _, variable := range parser.ScriptSource.Variables {
+		propertyUpdate := ""
+		for _, componentProperties := range self.componentProperties {
+			if id, ok := componentProperties.Properties[variable]; ok {
+				propertyUpdate += `
+					this['component-` + strconv.Itoa(componentProperties.Index) + `'].$props['` + id + `'] = value`
+			}
+		}
 		variables += `
 			Object.defineProperty(this, "` + variable + `", {
 				get() {
@@ -167,12 +176,33 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 					` + variable + ` = value;
 					currentComponent.` + variable + `IsDirty = true;
 					new Observer(value, "` + variable + `")
-					currentComponent.queueUpdate();
+					currentComponent.queueUpdate(); ` + propertyUpdate + `
 				}
 			})
 		`
 		setIsDirtyFalse += `
 			currentComponent.` + variable + `IsDirty = false;`
+	}
+
+	properties := ""
+
+	if len(parser.ScriptSource.Properties) > 0 {
+		properties = "let that = this;"
+	}
+
+	for _, property := range parser.ScriptSource.Properties {
+		properties += `
+			Object.defineProperty(component.$props, "` + property + `", {
+				get() {
+					return this.` + property + `;
+				},
+				set(value) {
+					that.` + property + ` = value;
+				}
+			})
+			if(props['` + property + `']) {
+				` + property + ` = props['` + property + `'];
+			}`
 	}
 
 	code := ""
@@ -182,15 +212,19 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 `
 	}
 
-	code += `var component = function(options) {` + js + variables +
-		`; var currentComponent = null;
+	code += `var component = function(options, props) {
+		let currentComponent = null;` + js + variables +
+		`; 
 		` + strings.Join(renderersSources, "\n") +
 		`
-			var component = {};
+			let component = {};
 			var state = {};
 			component.oldState = {};
 			var updating = false;
 			var dirtyInState = [];
+
+			component.$props = {};
+			` + properties + `
 
 			component.queueUpdate = function performUpdate() {
 				if(!updating) {
@@ -312,6 +346,7 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
             	    new Observer(this[property], property)
                 }
         	})
+
 			return component;
 	}
 	export default component`

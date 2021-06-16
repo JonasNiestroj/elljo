@@ -10,15 +10,15 @@ type Node interface {
 	Index1() int
 }
 
-type(
+type (
 	Expression interface {
 		Node
 	}
 
 	ArrayLiteral struct {
-		LeftBracket int
+		LeftBracket  int
 		RightBracket int
-		Value []Expression
+		Value        []Expression
 	}
 
 	AssignExpression struct {
@@ -29,7 +29,7 @@ type(
 
 	BadExpression struct {
 		From int
-		To int
+		To   int
 	}
 
 	BinaryExpression struct {
@@ -40,9 +40,9 @@ type(
 	}
 
 	BooleanLiteral struct {
-		Index int
+		Index   int
 		Literal string
-		Value bool
+		Value   bool
 	}
 
 	BracketExpression struct {
@@ -80,8 +80,8 @@ type(
 	}
 
 	Identifier struct {
-		Name unistring.String
-		Index  int
+		Name  unistring.String
+		Index int
 	}
 
 	NewExpression struct {
@@ -93,14 +93,14 @@ type(
 	}
 
 	NullLiteral struct {
-		Index int
+		Index   int
 		Literal string
 	}
 
 	NumberLiteral struct {
-		Index int
+		Index   int
 		Literal string
-		Value interface{}
+		Value   interface{}
 	}
 
 	SpreadElement struct {
@@ -109,14 +109,14 @@ type(
 	}
 
 	ObjectLiteral struct {
-		LeftBrace int
+		LeftBrace  int
 		RightBrace int
-		Value []Property
+		Value      []Property
 	}
 
 	ParameterList struct {
 		Opening int
-		List []*Identifier
+		List    []*Identifier
 		Closing int
 	}
 
@@ -127,14 +127,13 @@ type(
 	}
 
 	Property interface {
-
 	}
 
 	RegExpLiteral struct {
-		Index int
+		Index   int
 		Literal string
 		Pattern string
-		Flags string
+		Flags   string
 	}
 
 	SequenceExpression struct {
@@ -142,7 +141,7 @@ type(
 	}
 
 	StringLiteral struct {
-		Index     int
+		Index   int
 		Literal string
 		Value   unistring.String
 	}
@@ -153,21 +152,21 @@ type(
 
 	UnaryExpression struct {
 		Operator token.Token
-		Index      int
+		Index    int
 		Operand  Expression
 		Postfix  bool
 	}
 
 	VariableExpression struct {
 		Name        unistring.String
-		Index         int
+		Index       int
 		Initializer Expression
 	}
 
 	MetaProperty struct {
-		Meta *Identifier
+		Meta     *Identifier
 		Property *Identifier
-		Index int
+		Index    int
 	}
 
 	Statement interface {
@@ -176,17 +175,17 @@ type(
 
 	BadStatement struct {
 		From int
-		To int
+		To   int
 	}
 
 	BlockStatement struct {
-		LeftBrace int
-		List []Statement
+		LeftBrace  int
+		List       []Statement
 		RightBrace int
 	}
 
 	BranchStatement struct {
-		Index   int
+		Index int
 		Token token.Token
 		Label *Identifier
 	}
@@ -252,9 +251,9 @@ type(
 
 	ImportStatement struct {
 		Source string
-		Name string
-		From int
-		To int
+		Name   string
+		From   int
+		To     int
 	}
 
 	LabelledStatement struct {
@@ -288,7 +287,7 @@ type(
 	}
 
 	VariableStatement struct {
-		Var int
+		Var  int
 		List []Expression
 	}
 
@@ -304,8 +303,12 @@ type(
 		Body   Statement
 	}
 
-	Declaration interface {
+	ExportStatement struct {
+		Export    int
+		Statement Statement
+	}
 
+	Declaration interface {
 	}
 
 	FunctionDeclaration struct {
@@ -313,13 +316,13 @@ type(
 	}
 
 	VariableDeclaration struct {
-		Var int
+		Var  int
 		List []*VariableExpression
 	}
 )
 
 type Program struct {
-	Body []Statement
+	Body            []Statement
 	DeclarationList []Declaration
 }
 
@@ -370,6 +373,7 @@ func (self *TryStatement) Index0() int        { return self.Try }
 func (self *VariableStatement) Index0() int   { return self.Var }
 func (self *WhileStatement) Index0() int      { return self.While }
 func (self *WithStatement) Index0() int       { return self.With }
+func (self *ExportStatement) Index0() int     { return self.Export }
 
 func (self *ArrayLiteral) Index1() int          { return self.RightBracket }
 func (self *AssignExpression) Index1() int      { return self.Right.Index1() }
@@ -435,3 +439,4 @@ func (self *TryStatement) Index1() int      { return self.Try }
 func (self *VariableStatement) Index1() int { return self.List[len(self.List)-1].Index1() }
 func (self *WhileStatement) Index1() int    { return self.Body.Index1() }
 func (self *WithStatement) Index1() int     { return self.Body.Index1() }
+func (self *ExportStatement) Index1() int   { return self.Statement.Index1() }

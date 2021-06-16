@@ -96,7 +96,7 @@ func ReadAttributes(parser *Parser) []Attribute {
 				}
 				attributes = append(attributes, Attribute{Name: name, HasValue: true, Value: value, IsExpression: true, Expression: expression, IsCall: isCall})
 			} else {
-				attributes = append(attributes, Attribute{Name: name, HasValue: true, Value: value, IsEvent: isEvent})
+				attributes = append(attributes, Attribute{Name: name, HasValue: true, Value: `"` + value + `"`, IsEvent: isEvent})
 			}
 		} else {
 			attributes = append(attributes, Attribute{Name: name, HasValue: false})

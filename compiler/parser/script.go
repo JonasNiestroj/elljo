@@ -12,10 +12,16 @@ type Import struct {
 	Name   string
 }
 
+type Property struct {
+	ExportStatement *ast.ExportStatement
+	Name            string
+}
+
 var (
 	variables     []string
 	imports       []*ast.ImportStatement
 	dotExpression *ast.DotExpression
+	properties    []Property
 )
 
 func Walk(node ast.Node) {
@@ -35,6 +41,19 @@ func Walk(node ast.Node) {
 			}
 		}
 		dotExpression = id
+	}
+
+	if expression, ok := node.(*ast.ExportStatement); ok && expression != nil {
+		if id, ok := expression.Statement.(*ast.VariableStatement); ok && id != nil {
+			for _, variable := range id.List {
+				if id, ok := variable.(*ast.VariableExpression); ok && id != nil {
+					properties = append(properties, Property{
+						ExportStatement: expression,
+						Name:            id.Name.String(),
+					})
+				}
+			}
+		}
 	}
 }
 
@@ -79,6 +98,15 @@ func ReadScript(parserInstance *Parser, start int) ScriptSource {
 		importNames = append(importNames, importVar)
 	}
 
+	var propertyNames []string
+	for _, export := range properties {
+		exportStatement := export.ExportStatement
+		source = source[:exportStatement.Export-indexToRemove] + source[exportStatement.Statement.Index0()-indexToRemove:]
+		indexToRemove += 6
+		propertyNames = append(propertyNames, export.Name)
+		variables = append(variables, export.Name)
+	}
+
 	end := parserInstance.Index
 	parserInstance.Index += 9
 	return ScriptSource{
@@ -88,5 +116,6 @@ func ReadScript(parserInstance *Parser, start int) ScriptSource {
 		Variables:  variables,
 		Imports:    importNames,
 		Source:     source,
+		Properties: propertyNames,
 	}
 }

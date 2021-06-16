@@ -29,6 +29,7 @@ type ScriptSource struct {
 	Variables  []string
 	Imports    []Import
 	Source     string
+	Properties []string
 }
 
 type StyleSource struct {

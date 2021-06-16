@@ -6,6 +6,11 @@ import (
 	"strings"
 )
 
+type ComponentProperties struct {
+	Index      int
+	Properties map[string]string
+}
+
 func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry, current *Fragment) *Fragment {
 	current.Counters.Element++
 	name := "element_" + strconv.Itoa(current.Counters.Element)
@@ -17,13 +22,34 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 		}
 	}
 	if isComponent {
-		template := "new $name$({target: $target$});"
+		componentProperties := ComponentProperties{
+			Index:      self.componentCounter,
+			Properties: map[string]string{},
+		}
+		self.componentCounter++
+		props := ""
+		for _, attribute := range children.Attributes {
+			if !attribute.IsEvent {
+				if props != "" {
+					props += ", '" + attribute.Name + "': " + attribute.Value
+				} else {
+					props += attribute.Name + ": " + attribute.Value
+				}
+				if !attribute.IsCall {
+					componentProperties.Properties[attribute.Value] = attribute.Name
+				}
+			}
+		}
+		self.componentProperties = append(self.componentProperties, componentProperties)
+		createTemplate := `this['component-` + strconv.Itoa(componentProperties.Index) +
+			`'] = new $name$({target: $target$}, {` + props + `});`
 		variables := map[string]string{
 			"name":   children.Name,
 			"target": current.Target,
+			"props":  props,
 		}
 		initStatement := Statement{
-			source:   self.BuildString(template, variables),
+			source:   self.BuildString(createTemplate, variables),
 			mappings: [][]int{},
 		}
 		current.InitStatements = append(current.InitStatements, initStatement)

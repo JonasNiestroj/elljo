@@ -25,6 +25,13 @@ func (self *Parser) ParseStatementList() (statements []ast.Statement) {
 	return
 }
 
+func (self *Parser) ParseExportStatement() ast.Statement {
+	return &ast.ExportStatement{
+		Export:    self.ExpectToken(token.EXPORT),
+		Statement: self.ParseStatement(),
+	}
+}
+
 func (self *Parser) ParseStatement() ast.Statement {
 	if self.Token == token.EOF {
 		self.ErrorUnexpectedToken(self.Token)
@@ -49,6 +56,8 @@ func (self *Parser) ParseStatement() ast.Statement {
 		return self.ParseIfStatement()
 	case token.IMPORT:
 		return self.ParseImportStatement()
+	case token.EXPORT:
+		return self.ParseExportStatement()
 	case token.LEFT_BRACE:
 		return self.ParseBlockStatement()
 	case token.RETURN:
