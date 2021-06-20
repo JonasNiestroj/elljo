@@ -110,7 +110,7 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 		}
 	}
 
-	mappings := [][]int{{}}
+	mappings := [][]int{{}, {}}
 
 	for index, _ := range strings.Split(js, "\n") {
 		if index == len(strings.Split(js, "\n"))-1 {
@@ -138,6 +138,14 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 	var mappingsStrings []string
 
 	var lastLine []int
+
+	code := ""
+
+	for _, importVar := range parser.ScriptSource.Imports {
+		code += importVar.Source + `
+`
+		mappingsStrings = append(mappingsStrings, ";")
+	}
 
 	for i := 0; i < len(mappings); i++ {
 		mapping := mappings[i]
@@ -203,13 +211,6 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 			if(props['` + property + `']) {
 				` + property + ` = props['` + property + `'];
 			}`
-	}
-
-	code := ""
-
-	for _, importVar := range parser.ScriptSource.Imports {
-		code += importVar.Source + `
-`
 	}
 
 	code += `var component = function(options, props, events) {
@@ -379,5 +380,5 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 		indexToAdd += 8 + len(parser.StyleSource.Id)
 	}
 
-	return GeneratorOutput{Output: code, Sourcemap: sourcemap.CreateSourcemap(mappingsStrings), Css: style}
+	return GeneratorOutput{Output: code, Sourcemap: sourcemap.CreateSourcemap(parser.FileName, mappingsStrings), Css: style}
 }

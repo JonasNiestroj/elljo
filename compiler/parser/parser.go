@@ -43,6 +43,7 @@ type StyleSource struct {
 type Parser struct {
 	Index              int
 	Template           string
+	FileName           string
 	Entries            []*Entry
 	ScriptSource       ScriptSource
 	StyleSource        StyleSource

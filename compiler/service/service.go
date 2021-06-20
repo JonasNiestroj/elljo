@@ -16,10 +16,12 @@ func RunService() {
 		bytes := scanner.Bytes()
 		message := strings.ReplaceAll(string(bytes), "\\n", "\n")
 		if strings.HasPrefix(message, "compile") {
+			fileName := strings.Split(message, " ")[1]
 			var parserInstance = parser.Parser{
 				Index:    0,
-				Template: strings.Replace(message, "compile ", "", 1),
+				Template: strings.Replace(message, "compile "+fileName+" ", "", 1),
 				Entries:  []*parser.Entry{},
+				FileName: fileName,
 			}
 			parserInstance.Parse()
 
