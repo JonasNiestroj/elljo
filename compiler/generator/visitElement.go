@@ -4,6 +4,7 @@ import (
 	"elljo/compiler/parser"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 type ComponentProperties struct {
@@ -16,12 +17,18 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 	name := "element_" + strconv.Itoa(current.Counters.Element)
 
 	isComponent := false
+	isGlobalComponent := false
 	for _, componentImport := range parser.ScriptSource.Imports {
 		if componentImport.Name == children.Name {
 			isComponent = true
 		}
 	}
-	if isComponent {
+	if !isComponent {
+		if unicode.IsUpper(rune(children.Name[0])) {
+			isGlobalComponent = true
+		}
+	}
+	if isComponent || isGlobalComponent {
 		componentProperties := ComponentProperties{
 			Index:      self.componentCounter,
 			Properties: map[string]string{},
@@ -48,12 +55,22 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 			}
 		}
 		self.componentProperties = append(self.componentProperties, componentProperties)
-		createTemplate := `this['component-` + strconv.Itoa(componentProperties.Index) +
-			`'] = new $name$({target: $target$}, {` + props + `}, {` + events + `});`
+		createTemplate := ""
+		if isGlobalComponent {
+			createTemplate += `let $element_name$ = window.__elljo__.components["$name$"]
+								if(!$element_name$) {
+									//TODO: Log error and better error handling (only return this component)
+									return
+								}
+`
+		}
+		createTemplate += `this['component-` + strconv.Itoa(componentProperties.Index) +
+			`'] = new $element_name$({target: $target$}, {` + props + `}, {` + events + `});`
 		variables := map[string]string{
-			"name":   children.Name,
-			"target": current.Target,
-			"props":  props,
+			"name":         children.Name,
+			"target":       current.Target,
+			"props":        props,
+			"element_name": name,
 		}
 		initStatement := Statement{
 			source:   self.BuildString(createTemplate, variables),
@@ -182,7 +199,7 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 		UpdateStatments:    current.UpdateStatments,
 		UseAnchor:          current.UseAnchor,
 		Parent:             current,
-		IsComponent:        isComponent,
+		IsComponent:        isComponent || isGlobalComponent,
 		UpdateContextChain: current.UpdateContextChain,
 	}
 }
