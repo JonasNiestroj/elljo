@@ -44,7 +44,7 @@ func (self *Generator) VisitLoop(children parser.Entry, current *Fragment) *Frag
 			variableName := children.ExpressionSource[id.Index0():id.Index1()]
 
 			updateStatementTemplate := `
-				const oldState = currentComponent.oldState;
+				const oldState = this.oldState;
 				if(oldState && oldState.$variableName$ && oldState.$variableName$.length > $variableName$.length) {
 					var arrayDiff = this.utils.diffArray($variableName$.length > oldState.$variableName$.length ? 
 					$variableName$ : oldState.$variableName$, $variableName$.length > oldState.$variableName$.length ?

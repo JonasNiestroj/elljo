@@ -122,7 +122,7 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 					}
 					mappings = append(mappings, []int{0, 0, children.Line, 0})
 					createStatement += self.BuildString(variableCreateStatement, variables)
-					variableUpdateStatementSource := `if(currentComponent.$value$IsDirty) {
+					variableUpdateStatementSource := `if(this.$value$IsDirty) {
 								$name$.setAttribute("$attributeName$", $value$);
 							}`
 

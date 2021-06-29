@@ -145,8 +145,17 @@ func (self *Parser) ParseTryStatement() ast.Statement {
 func (self *Parser) ParseImportStatement() ast.Statement {
 	from := self.Index
 	self.ExpectToken(token.IMPORT)
-	name := self.Literal
-	self.ExpectToken(token.IDENTIFIER)
+	name := ""
+	if self.Token == token.LEFT_BRACE {
+		self.ExpectToken(token.LEFT_BRACE)
+		name = self.Literal
+		self.ExpectToken(token.IDENTIFIER)
+		self.ExpectToken(token.RIGHT_BRACE)
+	} else {
+		name = self.Literal
+		self.ExpectToken(token.IDENTIFIER)
+	}
+
 	self.ExpectToken(token.IMPORTFROM)
 	source := self.Literal
 	self.ExpectToken(token.STRING)

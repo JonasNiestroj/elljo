@@ -8,8 +8,9 @@ import (
 )
 
 type Import struct {
-	Source string
-	Name   string
+	Source  string
+	Name    string
+	IsEllJo bool
 }
 
 type Property struct {
@@ -94,13 +95,15 @@ func ReadScript(parserInstance *Parser, start int) ScriptSource {
 	var importNames []Import
 	indexToRemove := 0
 	for _, importStatement := range imports {
+		isElljoFile := false
 		// TODO: Improve .jo check
 		if !strings.HasSuffix(importStatement.Source, ".jo'") && !strings.HasSuffix(importStatement.Source, ".jo\"") {
-			continue
+			isElljoFile = true
 		}
 		importVar := Import{
-			Source: source[importStatement.Index0()-indexToRemove : importStatement.Index1()-indexToRemove],
-			Name:   importStatement.Name,
+			Source:  source[importStatement.Index0()-indexToRemove : importStatement.Index1()-indexToRemove],
+			Name:    importStatement.Name,
+			IsEllJo: isElljoFile,
 		}
 		source = source[:importStatement.Index0()-indexToRemove] +
 			source[importStatement.Index1()-indexToRemove:]

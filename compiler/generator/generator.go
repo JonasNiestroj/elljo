@@ -43,6 +43,7 @@ type Generator struct {
 	componentCounter    int
 	renderers           []Renderer
 	componentProperties []ComponentProperties
+	FileName            string
 }
 
 type GeneratorOutput struct {
@@ -180,16 +181,16 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 					return ` + variable + `;
 				},
 				set(value) {
-					currentComponent.oldState["` + variable + `"] = ` + variable + `;
+					this.oldState["` + variable + `"] = ` + variable + `;
 					` + variable + ` = value;
-					currentComponent.` + variable + `IsDirty = true;
+					this.` + variable + `IsDirty = true;
 					new Observer(value, "` + variable + `")
-					currentComponent.queueUpdate(); ` + propertyUpdate + `
+					this.queueUpdate(); ` + propertyUpdate + `
 				}
 			})
 		`
 		setIsDirtyFalse += `
-			currentComponent.` + variable + `IsDirty = false;`
+			this.` + variable + `IsDirty = false;`
 	}
 
 	properties := ""
@@ -200,7 +201,7 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 
 	for _, property := range parser.ScriptSource.Properties {
 		properties += `
-			Object.defineProperty(component.$props, "` + property + `", {
+			Object.defineProperty(this.$props, "` + property + `", {
 				get() {
 					return this.` + property + `;
 				},
@@ -213,165 +214,28 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 			}`
 	}
 
-	code += `var component = function(options, props, events) {
-		let currentComponent = null;` + js + variables +
-		`; 
-		` + strings.Join(renderersSources, "\n") +
-		`
-			let component = {};
-			var state = {};
-			component.oldState = {};
-			var updating = false;
-			var dirtyInState = [];
-
-			component.$props = {};
-			` + properties + `
-
-			component.$events = {}
-			if(events) {
-				Object.keys(events).forEach(event => {
-					if(!component.$events[event]) {
-						component.$events[event] = [events[event]]
-					} else {
-						component.$events[event].push(events[event])
-					}
-				})
-			}
-
-			component.queueUpdate = function performUpdate() {
-				if(!updating) {
-					updating = true;
-					Promise.resolve().then(component.update)
+	code += `import { setComponent, EllJoComponent } from 'elljo-runtime'
+		class ` + self.FileName + ` extends EllJoComponent {
+			constructor(options, props, events) {
+				super(options, props, events)
+				this.init(options, props, events);
+				this.update = () => {
+					this.updating = false;
+					this.$.mainFragment.update();
+					this.oldState = {}` + setIsDirtyFalse + `
 				}
 			}
-			component.update = function update() {
-				updating = false;
-				mainFragment.update();
-				component.oldState = {}` + setIsDirtyFalse + `
+
+			init(options, props, events) {
+				` + js + variables + strings.Join(renderersSources, "\n") + `
+
+				` + properties + `		
+
+				this.$.mainFragment = render(options.target);
+				this.queueUpdate();
 			}
-			component.teardown = function teardown () {
-				mainFragment.teardown();
-				mainFragment = null;
-				state = {};
-			};
-			this.$event = function(name) {
-				var callbacks = component.$events[name]
-				if(callbacks) {
-					const args = []
-					for(let i = 1; i < arguments.length; i++) {
-						args.push(arguments[i])
-					}
-					callbacks.forEach(callback => callback(...args))
-				}
-			}
-        	this.utils = { diffArray: function diffArray(one, two) {
-                if (!Array.isArray(two)) {
-                    return one.slice();
-                }
-
-                var tlen = two.length
-                var olen = one.length;
-                var idx = -1;
-                var arr = [];
-
-                while (++idx < olen) {
-                    var ele = one[idx];
-
-                    var hasEle = false;
-                    for (var i = 0; i < tlen; i++) {
-                        var val = two[i];
-
-                        if (ele === val) {
-                            hasEle = true;
-                            break;
-                        }
-                    }
-
-                    if (hasEle === false) {
-                        arr.push({element: ele, index: idx});
-                    }
-                }
-                return arr;
-            } }
-			let mainFragment = render(options.target);
-			currentComponent = component;
-			currentComponent.queueUpdate();
-
-			function patchArray(array, name) {
-				const methodsToPatch = ['push', 'pop', 'splice', 'sort', 'reverse', 'shift', 'unshift', 'fill']
-				methodsToPatch.forEach(method => {
-					const currentMethod = array[method]
-					Object.defineProperty(array, method,  {
-						enumerable: false,
-						configurable: false,
-						writable: false,
-						value: function() {
-							const result = currentMethod.apply(this, arguments)
-							currentComponent[name + 'IsDirty'] = true;
-							currentComponent.oldState[name] = array;
-							currentComponent.queueUpdate();
-							new Observer(result, name);
-							return result;
-						}
-					});
-				});
-        	}
-
-        	function Observer(value, name) {
-			    if(!value || value.__observer__ ||(!Array.isArray(value) && typeof value !== 'object')) {
-			        return
-                }
-                this.value = value
-                value.__observer__ = this
-                if(Array.isArray(value)) {
-                    for(var i = 0; i < value.length; i++) {
-                        new Observer(value[i], name)
-                    }
-                } else if (typeof value === 'object' && value !== null) {
-                    const keys = Object.keys(value)
-                    for(var i = 0; i < keys.length; i++) {
-                        const key = keys[i]
-                        // Check if current property is configurable
-                        var prop = Object.getOwnPropertyDescriptor(value, key)
-                        if((prop && !prop.configurable) || key === '__observer__') {
-                            continue
-                        }
-                		let keyValue = value[key];
-                        // TODO: Check for already existing getter/setter
-                        new Observer(keyValue, name)
-                        Object.defineProperty(value, key, {
-                            enumerable: true,
-                            configurable: true,
-                            get: function() {
-                                return keyValue
-                            },
-                            set: function(newValue) {
-                                currentComponent[name + 'IsDirty'] = true;
-                                currentComponent.oldState[name] = keyValue;
-                                currentComponent.queueUpdate();
-                                keyValue = newValue
-                                new Observer(newValue, name)
-                            }
-                        })
-                    }
-                }
-            }
-
-        	const propertyNames = Object.getOwnPropertyNames(this)
-
-			for(let i = 0; i < propertyNames.length; i++) {
-				const property = propertyNames[i]
-            	if(Array.isArray(this[property])) {
-                	patchArray(this[property], property)
-					new Observer(this[property], property)
-            	} else {
-            	    new Observer(this[property], property)
-                }
-			}
-
-			return component;
-	}
-	export default component`
+		}
+		export default ` + self.FileName
 
 	style := parser.StyleSource.Source
 	indexToAdd := 0

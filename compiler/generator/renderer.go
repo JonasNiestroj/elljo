@@ -33,6 +33,18 @@ func (self *Generator) CreateRenderer(fragment Fragment) Renderer {
 		initStatements = append(initStatements, initStatement.source)
 	}
 
+	if fragment.Name == "render" {
+		initStatements = append(initStatements, `
+			window.requestAnimationFrame(() => {
+				const callbacks = this.$.afterRender
+				for(let i = 0; i < callbacks.length; i++) {
+					callbacks[i]()
+				}
+			});
+			`)
+		mappings = append(mappings, []int{}, []int{}, []int{}, []int{}, []int{})
+	}
+
 	mappings = append(mappings, []int{})
 
 	var updateStatements []string

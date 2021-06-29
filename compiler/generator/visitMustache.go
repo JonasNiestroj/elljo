@@ -33,7 +33,7 @@ func (self *Generator) VisitMustache(parserInstance parser.Parser, children pars
 			if current.UpdateContextChain != "" {
 				updateStatementTemplate += `if(!$name$_value || $variable$ !== $name$_value) {`
 			} else {
-				updateStatementTemplate += `if((currentComponent.$variable$IsDirty || !$name$_value) && $variable$ !== $name$_value) {`
+				updateStatementTemplate += `if((this.$variable$IsDirty || !$name$_value) && $variable$ !== $name$_value) {`
 			}
 			updateStatementTemplate += `
 				$name$_value = $variable$;

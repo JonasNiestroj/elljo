@@ -37,7 +37,9 @@ func RunService() {
 				break
 			}
 
-			generatorInstance := generator.Generator{}
+			generatorInstance := generator.Generator{
+				FileName: strings.Split(fileName, ".")[0],
+			}
 
 			generated := generatorInstance.Generate(parserInstance, parserInstance.Template)
 

@@ -35,7 +35,9 @@ func main() {
 		return
 	}
 
-	var generatorInstance = generator.Generator{}
+	var generatorInstance = generator.Generator{
+		FileName: "Component",
+	}
 
 	generated := generatorInstance.Generate(parserInstance, parserInstance.Template)
 
