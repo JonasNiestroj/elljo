@@ -10,3 +10,10 @@ export const afterRender = (callback) => {
   }
   currentComponent.$.afterRender.push(callback)
 }
+
+export const beforeDestroy = (callback) => {
+  if (!currentComponent) {
+    return
+  }
+  currentComponent.$.beforeDestroy.push(callback)
+}

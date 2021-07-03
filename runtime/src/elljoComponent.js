@@ -1,14 +1,16 @@
 import { setComponent } from './lifecycleHooks'
+import Observer from './observer'
 
 export default class EllJoComponent {
 
   constructor(options, props, events) {
     this.$ = {};
     this.$.afterRender = [];
+    this.$.beforeDestroy = [];
     this.$props = {};
     this.$events = {};
     this.oldState = {};
-    this.upading = false
+    this.updating = false
     setComponent(this);
 
     if (events) {
@@ -20,7 +22,7 @@ export default class EllJoComponent {
         }
       })
     }
-    
+
     this.$event = (name) => {
       var callbacks = this.$events[name]
       if (callbacks) {
@@ -31,7 +33,7 @@ export default class EllJoComponent {
         callbacks.forEach(callback => callback(...args))
       }
     }
-    
+
     this.utils = {
       diffArray: function diffArray(one, two) {
         if (!Array.isArray(two)) {
@@ -63,17 +65,58 @@ export default class EllJoComponent {
         return arr;
       }
     }
+
+    const propertyNames = Object.getOwnPropertyNames(this)
+    for (let i = 0; i < propertyNames.length; i++) {
+      const property = propertyNames[i]
+      if (Array.isArray(this[property])) {
+        patchArray(this[property], property)
+        new Observer(this[property], property)
+      } else {
+        new Observer(this[property], property)
+      }
+    }
+
+    function patchArray(array, name) {
+      const methodsToPatch = ['push', 'pop', 'splice', 'sort', 'reverse', 'shift', 'unshift', 'fill']
+      methodsToPatch.forEach(method => {
+        const currentMethod = array[method]
+        Object.defineProperty(array, method, {
+          enumerable: false,
+          configurable: false,
+          writable: false,
+          value: function () {
+            const result = currentMethod.apply(this, arguments)
+            this[name + 'IsDirty'] = true;
+            this.oldState[name] = array;
+            this.queueUpdate();
+            new Observer(result, name);
+            return result;
+          }
+        });
+      });
+    }
+  }
+
+  update() {
+    this.updating = false;
+    this.$.mainFragment.update();
+    this.oldState = {}
   }
 
   queueUpdate() {
-		if(!this.updating) {
-			this.updating = true;
-			Promise.resolve().then(this.update)
-		}
+    if (!this.updating) {
+      this.updating = true;
+      Promise.resolve().then(() => this.update())
+    }
   }
 
   teardown() {
-    this.mainFragment.teardown();
-    mainFragment = null;
+    const callbacks = this.$.beforeDestroy
+    for (let i = 0; i < callbacks.length; i++) {
+      callbacks[i]()
+    }
+    this.$.mainFragment.teardown();
+    this.$.mainFragment = null;
   }
 }
