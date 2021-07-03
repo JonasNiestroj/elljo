@@ -77,6 +77,15 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 			mappings: [][]int{},
 		}
 		current.InitStatements = append(current.InitStatements, initStatement)
+
+		removeStatementSource := "this['component-" + strconv.Itoa(componentProperties.Index) + "'].teardown();"
+
+		removeStatement := Statement{
+			source:   removeStatementSource,
+			mappings: [][]int{{}},
+		}
+
+		current.TeardownStatements = append(current.TeardownStatements, removeStatement)
 	} else {
 		template := "var $name$ = document.createElement('$childrenName$');"
 		variables := map[string]string{

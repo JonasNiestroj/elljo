@@ -214,16 +214,16 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 			}`
 	}
 
-	code += `import { setComponent, EllJoComponent } from 'elljo-runtime'
+	code += `import { setComponent, EllJoComponent, Observer } from 'elljo-runtime'
 		class ` + self.FileName + ` extends EllJoComponent {
 			constructor(options, props, events) {
 				super(options, props, events)
 				this.init(options, props, events);
-				this.update = () => {
-					this.updating = false;
-					this.$.mainFragment.update();
-					this.oldState = {}` + setIsDirtyFalse + `
-				}
+			}
+
+			update() {
+				super.update()
+				` + setIsDirtyFalse + `
 			}
 
 			init(options, props, events) {
