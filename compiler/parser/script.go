@@ -18,8 +18,20 @@ type Property struct {
 	Name            string
 }
 
+type Variable struct {
+	Name        string
+	Initializer ast.Expression
+	IsProperty  bool
+}
+
+type ParsedVariable struct {
+	Name       string
+	Value      string
+	IsProperty string
+}
+
 var (
-	variables     []string
+	variables     []Variable
 	thisVariables []string
 	imports       []*ast.ImportStatement
 	dotExpression *ast.DotExpression
@@ -49,7 +61,10 @@ func Walk(node ast.Node) {
 	if id, ok := node.(*ast.VariableStatement); ok && id != nil {
 		for _, variable := range id.List {
 			if id, ok := variable.(*ast.VariableExpression); ok && id != nil {
-				variables = append(variables, id.Name.String())
+				variables = append(variables, Variable{
+					Name:        id.Name.String(),
+					Initializer: id.Initializer,
+				})
 			}
 		}
 	}
@@ -117,15 +132,18 @@ func ReadScript(parserInstance *Parser, start int) ScriptSource {
 		source = source[:exportStatement.Export-indexToRemove] + source[exportStatement.Statement.Index0()-indexToRemove:]
 		indexToRemove += 6
 		propertyNames = append(propertyNames, export.Name)
-		variables = append(variables, export.Name)
+		variables = append(variables, Variable{
+			Name:       export.Name,
+			IsProperty: true,
+		})
 	}
 
-	var usedVariables []string
+	// var usedVariables []ParsedVariable
 
-	for _, thisVariable := range thisVariables {
+	/*for _, thisVariable := range thisVariables {
 		contains := false
 		for _, variable := range variables {
-			if variable == thisVariable {
+			if variable.Name == thisVariable {
 				contains = true
 			}
 		}
@@ -133,11 +151,11 @@ func ReadScript(parserInstance *Parser, start int) ScriptSource {
 		if contains {
 			usedVariables = append(usedVariables, thisVariable)
 		}
-	}
+	}*/
 
-	for _, properties := range properties {
+	/*for _, properties := range properties {
 		usedVariables = append(usedVariables, properties.Name)
-	}
+	}*/
 
 	end := parserInstance.Index
 	parserInstance.Index += 9
@@ -145,7 +163,7 @@ func ReadScript(parserInstance *Parser, start int) ScriptSource {
 		StartIndex: start,
 		EndIndex:   end,
 		Program:    program,
-		Variables:  usedVariables,
+		Variables:  variables,
 		Imports:    importNames,
 		Source:     source,
 		Properties: propertyNames,

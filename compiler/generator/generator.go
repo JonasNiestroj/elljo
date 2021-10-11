@@ -170,27 +170,27 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 	for _, variable := range parser.ScriptSource.Variables {
 		propertyUpdate := ""
 		for _, componentProperties := range self.componentProperties {
-			if id, ok := componentProperties.Properties[variable]; ok {
+			if id, ok := componentProperties.Properties[variable.Name]; ok {
 				propertyUpdate += `
 					this['component-` + strconv.Itoa(componentProperties.Index) + `'].$props['` + id + `'] = value`
 			}
 		}
 		variables += `
-			Object.defineProperty(this, "` + variable + `", {
+			Object.defineProperty(this, "` + variable.Name + `", {
 				get() {
-					return ` + variable + `;
+					return ` + variable.Name + `;
 				},
 				set(value) {
-					this.oldState["` + variable + `"] = ` + variable + `;
-					` + variable + ` = value;
-					this.` + variable + `IsDirty = true;
-					new Observer(value, "` + variable + `")
+					this.oldState["` + variable.Name + `"] = ` + variable.Name + `;
+					` + variable.Name + ` = value;
+					this.` + variable.Name + `IsDirty = true;
+					new Observer(value, "` + variable.Name + `")
 					this.queueUpdate(); ` + propertyUpdate + `
 				}
 			})
 		`
 		setIsDirtyFalse += `
-			this.` + variable + `IsDirty = false;`
+			this.` + variable.Name + `IsDirty = false;`
 	}
 
 	properties := ""
