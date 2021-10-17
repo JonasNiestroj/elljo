@@ -162,7 +162,7 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 
 			} else {
 				if attribute.HasValue {
-					createStatement += name + `.setAttribute("` + attribute.Name + `", "` + attribute.Value + `");`
+					createStatement += name + `.setAttribute("` + attribute.Name + `", ` + attribute.Value + `);`
 					mappings = append(mappings, []int{})
 				} else {
 					createStatement += name + `.setAttribute("` + attribute.Name + `", "true");`
