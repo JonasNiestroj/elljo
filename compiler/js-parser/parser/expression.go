@@ -38,6 +38,7 @@ func (self *Parser) ParseExpression() ast.Expression {
 func (self *Parser) ParsePrimaryExpression() ast.Expression {
 	literal, parsedLiteral := self.Literal, self.ParsedLiteral
 	index := self.Index
+
 	switch self.Token {
 	case token.IDENTIFIER:
 		self.NextToken()
@@ -111,6 +112,8 @@ func (self *Parser) ParsePrimaryExpression() ast.Expression {
 		}
 	case token.FUNCTION:
 		return self.ParseFunction(false)
+	case token.ARROW_FUNCTION:
+		return self.ParseArrowFunction()
 	case token.Ellipsis:
 		return self.ParseSpreadElement()
 	}
@@ -769,6 +772,10 @@ func (self *Parser) ParseConditionalExpression() ast.Expression {
 func (self *Parser) ParseAssignmentExpression() ast.Expression {
 	left := self.ParseConditionalExpression()
 	var operator token.Token
+	if self.Token == token.ARROW_FUNCTION {
+		return self.ParseArrowFunction()
+	}
+
 	switch self.Token {
 	case token.ASSIGN:
 		operator = self.Token

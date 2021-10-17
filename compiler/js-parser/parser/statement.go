@@ -250,10 +250,13 @@ func (self *Parser) ParseFunction(declaration bool) *ast.FunctionLiteral {
 func (self *Parser) ParseArrowFunction() *ast.FunctionLiteral {
 	node := &ast.FunctionLiteral{}
 
-	if self.Token != token.RIGHT_PARENTHESIS {
+	if self.Token != token.RIGHT_PARENTHESIS && self.Token != token.ARROW_FUNCTION {
 		node.ParameterList = self.ParseFunctionParameterListIdentifiers()
 	}
-	self.NextToken()
+	if self.Token != token.ARROW_FUNCTION {
+		self.NextToken()
+	}
+
 	self.ExpectToken(token.ARROW_FUNCTION)
 	self.ParseFunctionBlock(node)
 	node.Source = self.Slice(node.Index0(), node.Index1())
