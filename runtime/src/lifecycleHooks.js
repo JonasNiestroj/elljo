@@ -17,3 +17,17 @@ export const beforeDestroy = (callback) => {
   }
   currentComponent.$.beforeDestroy.push(callback)
 }
+
+export const mounted = (callback) => {
+  if (!currentComponent) {
+    return
+  }
+  currentComponent.$.mounted.push(callback)
+}
+
+export const update = (callback) => {
+  if (!currentComponent) {
+    return
+  }
+  currentComponent.$.update.push(callback)
+}
