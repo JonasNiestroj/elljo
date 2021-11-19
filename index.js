@@ -10,13 +10,46 @@ const install = async (callback) => {
     gunzip.on('error', callback);
     untar.on('error', callback);
 
-    let req = await fetch(
-        'https://jo-compiler.s3.eu-central-1.amazonaws.com/elljo_0.0.0-SNAPSHOT-acf1211_darwin_amd64.tar.gz'
-    );
+    const architecture = process.arch;
+    const os = process.platform;
+
+    let url =
+        'https://jo-compiler.s3.eu-central-1.amazonaws.com/jo_v0.0.0-SNAPSHOT-ad313f7_';
+
+    switch (os) {
+        case 'darwin':
+            url += 'darwin_';
+            break;
+        case 'linux':
+            url += 'linux_';
+            break;
+        case 'win32':
+            url += 'windows_';
+            break;
+        default:
+            console.error('Your system is not supported by EllJo!');
+            process.exit(1);
+    }
+
+    switch (architecture) {
+        case 'x64':
+            url += 'amd64';
+            break;
+        case 'arm64':
+            url += 'arm64';
+            break;
+        default:
+            console.error('Your cpu architecture is not supported by EllJo!');
+            process.exit(1);
+    }
+
+    url += '.tar.gz';
+
+    let req = await fetch(url);
     req.body.pipe(gunzip).pipe(untar);
 };
 
-function uninstall(callback) {}
+function uninstall(callback) { }
 
 let argv = process.argv;
 if (argv && argv.length > 2) {
