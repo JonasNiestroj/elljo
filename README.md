@@ -9,6 +9,10 @@ EllJo is a web framework focused on performance. The compiler is written in gola
 
 TODO
 
+## Useful tools
+
+[vite-plugin-elljo](https://github.com/JonasNiestroj/vite-plugin-elljo) Enables the use of EllJo with vite
+
 ## About
 
 This repository contains the EllJo compiler and the EllJo runtime.
