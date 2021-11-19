@@ -5,10 +5,12 @@
 
 EllJo is a web framework focused on performance. The compiler is written in golang and transforms your EllJo code into executable javascript.
 
-## Getting started
-
-TODO
-
 ## Documentation
 
 TODO
+
+## About
+
+This repository contains the EllJo compiler and the EllJo runtime.
+The compiler compiles your EllJo code to plain js.
+The runtime provides some utilities that are needed to run compiled EllJo code in the browser.

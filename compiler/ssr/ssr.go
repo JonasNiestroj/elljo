@@ -4,8 +4,6 @@ import (
 	"elljo/compiler/parser"
 )
 
-import v8 "rogchap.com/v8go"
-
 type SSR struct {
 	Render string
 }
@@ -67,10 +65,10 @@ Main.render = function() {
  return ` + "`" + self.Render + "`" + `
 }`
 
-	ctx, _ := v8.NewContext()
-	ctx.RunScript(code, "code.js")
-	ctx.RunScript("const rendered = Main.render()", "render.js")
-	renderedHtml, _ := ctx.RunScript("rendered", "rendered.js")
+	// ctx, _ := v8.NewContext()
+	// ctx.RunScript(code, "code.js")
+	// ctx.RunScript("const rendered = Main.render()", "render.js")
+	// renderedHtml, _ := ctx.RunScript("rendered", "rendered.js")
 
-	return Output{Html: renderedHtml.String(), Css: style}
+	return Output{Html: "", Css: style}
 }
