@@ -44,6 +44,7 @@ type Generator struct {
 	renderers           []Renderer
 	componentProperties []ComponentProperties
 	FileName            string
+	elements            map[string]struct{}
 }
 
 type GeneratorOutput struct {
@@ -91,6 +92,7 @@ func (self *Generator) Visit(parser parser.Parser, children parser.Entry, curren
 }
 
 func (self *Generator) Generate(parser parser.Parser, template string) GeneratorOutput {
+	self.elements = make(map[string]struct{})
 	current := Fragment{
 		UseAnchor:          false,
 		Name:               "render",
@@ -214,7 +216,15 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 			}`
 	}
 
+	elementCache := "const elementCache = {};"
+
+	for key, _ := range self.elements {
+		elementCache += `
+			elementCache.` + key + ` = document.createElement("` + key + `");`
+	}
+
 	code += `import { setComponent, EllJoComponent, Observer } from 'elljo-runtime'
+		` + elementCache + `
 		class ` + self.FileName + ` extends EllJoComponent {
 			constructor(options, props, events) {
 				super(options, props, events)

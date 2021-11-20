@@ -49,17 +49,18 @@ func (self *Generator) VisitLoop(children parser.Entry, current *Fragment) *Frag
 					var arrayDiff = this.utils.diffArray($variableName$.length > oldState.$variableName$.length ? 
 					$variableName$ : oldState.$variableName$, $variableName$.length > oldState.$variableName$.length ?
 					oldState.$variableName$ : $variableName$);
-					for(var i = 0; i < arrayDiff.length; i++) {
+					for(var i = 0, length = arrayDiff.length; i < length; i++) {
 						$name$_iterations[arrayDiff[i].index].teardown();
 					}
-					for(var i = 0; i < arrayDiff.length; i++) {
+					for(var i = 0, length = arrayDiff.length; i < length; i++) {
 						$name$_iterations.splice(arrayDiff[i].index, 1)
 					}
 				}
-				for(var i = 0; i < $variableName$.length; i++) {
+				for(var i = 0, length = $variableName$.length; i < length; i++) {
 					if(!$name$_iterations[i]) {
-						$name$_iterations[i] = $renderer$($name$_fragment, $name$_anchor, $variableName$[i]);
-						$name$_iterations[i].update($variableName$[i]);
+						var variable = $variableName$[i];
+						$name$_iterations[i] = $renderer$($name$_fragment, $name$_anchor, variable);
+						$name$_iterations[i].update(variable);
 					}
 					const iteration = $name$_iterations[i];
 					iteration.update(this.$variableName$[i]);

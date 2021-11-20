@@ -87,10 +87,14 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 
 		current.TeardownStatements = append(current.TeardownStatements, removeStatement)
 	} else {
-		template := "var $name$ = document.createElement('$childrenName$');"
+		template := `
+		var $name$ = elementCache.$childrenName$.cloneNode(true);
+		`
+		childrenName := strings.ReplaceAll(children.Name, "\n", "")
+		self.elements[childrenName] = struct{}{}
 		variables := map[string]string{
 			"name":         name,
-			"childrenName": strings.ReplaceAll(children.Name, "\n", ""),
+			"childrenName": childrenName,
 		}
 		createStatement := self.BuildString(template, variables)
 		mappings := [][]int{{}}
@@ -101,7 +105,7 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 					attributeCreateStatement := `var $name$_attr_$index$ = () => {
 						return $value$
 					};
-					$name$.setAttribute("$attributeName$", $name$_attr_$index$());`
+					$name$.$attributeName$ = $name$_attr_$index$();`
 
 					mappings = append(mappings, []int{}, []int{}, []int{}, []int{}, []int{})
 
@@ -114,7 +118,7 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 
 					createStatement += self.BuildString(attributeCreateStatement, variables)
 
-					attributeUpdateStatementSource := `$name$.setAttribute("$attributeName$", $name$_attr_$index$());`
+					attributeUpdateStatementSource := `$name$["$attributeName$"] = $name$_attr_$index$();`
 
 					attributeUpdateStatement := Statement{
 						source:   self.BuildString(attributeUpdateStatementSource, variables),
@@ -123,7 +127,7 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 
 					current.UpdateStatments = append(current.UpdateStatments, attributeUpdateStatement)
 				} else {
-					variableCreateStatement := `$name$.setAttribute("$attributeName$", $value$);`
+					variableCreateStatement := `$name$["$attributeName$"] = $value$;`
 					variables := map[string]string{
 						"name":          name,
 						"attributeName": attribute.Name,
@@ -132,7 +136,7 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 					mappings = append(mappings, []int{0, 0, children.Line, 0})
 					createStatement += self.BuildString(variableCreateStatement, variables)
 					variableUpdateStatementSource := `if(this.$value$IsDirty) {
-								$name$.setAttribute("$attributeName$", $value$);
+								$name$["$attributeName$"] = $value$;
 							}`
 
 					variableUpdateStatement := Statement{
@@ -162,10 +166,10 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 
 			} else {
 				if attribute.HasValue {
-					createStatement += name + `.setAttribute("` + attribute.Name + `", ` + attribute.Value + `);`
+					createStatement += name + `["` + attribute.Name + `"] = ` + attribute.Value + `;`
 					mappings = append(mappings, []int{})
 				} else {
-					createStatement += name + `.setAttribute("` + attribute.Name + `", "true");`
+					createStatement += name + `["` + attribute.Name + `"] = true;`
 					mappings = append(mappings, []int{})
 				}
 			}
