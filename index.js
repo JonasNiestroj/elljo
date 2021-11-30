@@ -14,7 +14,7 @@ const install = async (callback) => {
     const os = process.platform;
 
     let url =
-        'https://jo-compiler.s3.eu-central-1.amazonaws.com/jo_v0.0.0-SNAPSHOT-ad313f7_';
+        'https://jo-compiler.s3.eu-central-1.amazonaws.com/elljo_0.0.0-SNAPSHOT-ad313f7_';
 
     switch (os) {
         case 'darwin':

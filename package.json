@@ -1,6 +1,6 @@
 {
   "name": "@elljo/compiler",
-  "version": "0.0.3",
+  "version": "0.0.1-alpha",
   "description": "A web framework focused on performance",
   "main": "index.js",
   "directories": {

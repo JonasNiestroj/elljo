@@ -3,3 +3,5 @@ compiler
 index.html
 output.html
 template.html
+build.sh
+compiler/.idea

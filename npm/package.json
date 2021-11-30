@@ -1,0 +1,13 @@
+{
+    "name": "elljo",
+    "version": "0.0.2",
+    "description": "The EllJo Framework",
+    "main": "index.js",
+    "dependencies": {
+        "@elljo/compiler": "0.0.1-alpha",
+        "vite-plugin-elljo": "0.0.1-alpha",
+        "@elljo/runtime": "0.0.1-alpha"
+    },
+    "author": "Jonas Niestroj",
+    "license": "MIT"
+}
