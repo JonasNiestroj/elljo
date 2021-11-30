@@ -1,4 +1,4 @@
-import { setComponent } from './lifecycleHooks';
+import { setComponent, currentComponent } from './lifecycleHooks';
 import Observer from './observer';
 
 export default class EllJoComponent {
@@ -66,46 +66,11 @@ export default class EllJoComponent {
         return arr;
       },
     };
+  }
 
-    const propertyNames = Object.getOwnPropertyNames(this);
-    for (let i = 0; i < propertyNames.length; i++) {
-      const property = propertyNames[i];
-      if (Array.isArray(this[property])) {
-        patchArray(this[property], property);
-        new Observer(this[property], property);
-      } else {
-        new Observer(this[property], property);
-      }
-    }
-
-    function patchArray(array, name) {
-      const methodsToPatch = [
-        'push',
-        'pop',
-        'splice',
-        'sort',
-        'reverse',
-        'shift',
-        'unshift',
-        'fill',
-      ];
-      methodsToPatch.forEach((method) => {
-        const currentMethod = array[method];
-        Object.defineProperty(array, method, {
-          enumerable: false,
-          configurable: false,
-          writable: false,
-          value: function () {
-            const result = currentMethod.apply(this, arguments);
-            this[name + 'IsDirty'] = true;
-            this.oldState[name] = array;
-            this.queueUpdate();
-            new Observer(result, name);
-            return result;
-          },
-        });
-      });
-    }
+  updateValue(name, func) {
+    currentComponent[name + 'IsDirty'] = true;
+    currentComponent.queueUpdate();
   }
 
   update() {

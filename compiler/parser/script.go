@@ -3,6 +3,7 @@ package parser
 import (
 	"elljo/compiler/js-parser/ast"
 	"elljo/compiler/js-parser/parser"
+	"elljo/compiler/utils"
 	"regexp"
 	"strings"
 )
@@ -30,12 +31,18 @@ type ParsedVariable struct {
 	IsProperty string
 }
 
+type Assign struct {
+	Name       string
+	Expression *ast.AssignExpression
+}
+
 var (
 	variables     []Variable
 	thisVariables []string
 	imports       []*ast.ImportStatement
 	dotExpression *ast.DotExpression
 	properties    []Property
+	assigns       []Assign
 )
 
 func Walk(node ast.Node) {
@@ -81,6 +88,34 @@ func Walk(node ast.Node) {
 			}
 		}
 	}
+
+	if expression, ok := node.(*ast.AssignExpression); ok && expression != nil {
+		if left, ok := expression.Left.(*ast.Identifier); ok && left != nil {
+			if variablesContains(left.Name.String()) {
+				assigns = append(assigns, Assign{
+					Name:       left.Name.String(),
+					Expression: expression,
+				})
+			}
+		}
+		if left, ok := expression.Left.(*ast.DotExpression); ok && left != nil {
+			if variablesContains(left.Identifier.Name.String()) {
+				assigns = append(assigns, Assign{
+					Name:       left.Identifier.Name.String(),
+					Expression: expression,
+				})
+			}
+		}
+	}
+}
+
+func variablesContains(name string) bool {
+	for _, variable := range variables {
+		if variable.Name == name {
+			return true
+		}
+	}
+	return false
 }
 
 func ReadScript(parserInstance *Parser, start int) ScriptSource {
@@ -107,8 +142,12 @@ func ReadScript(parserInstance *Parser, start int) ScriptSource {
 		}
 	}
 
+	stringReplacer := &utils.StringReplacer{
+		Text: source,
+	}
+
 	var importNames []Import
-	indexToRemove := 0
+
 	for _, importStatement := range imports {
 		isElljoFile := false
 		// TODO: Improve .jo check
@@ -116,21 +155,24 @@ func ReadScript(parserInstance *Parser, start int) ScriptSource {
 			isElljoFile = true
 		}
 		importVar := Import{
-			Source:  source[importStatement.Index0()-indexToRemove : importStatement.Index1()-indexToRemove],
+			Source:  source[importStatement.Index0():importStatement.Index1()],
 			Name:    importStatement.Name,
 			IsEllJo: isElljoFile,
 		}
-		source = source[:importStatement.Index0()-indexToRemove] +
-			source[importStatement.Index1()-indexToRemove:]
-		indexToRemove += int(importStatement.Index1()) - int(importStatement.Index0())
+		stringReplacer.Replace(importStatement.Index0(), importStatement.Index1(), "")
 		importNames = append(importNames, importVar)
+	}
+
+	for _, assign := range assigns {
+		assignSource := source[assign.Expression.Index0():assign.Expression.Index1()]
+		newAssignSource := "this.oldState." + assign.Name + " = " + assign.Name + "; this.updateValue('" + assign.Name + "', " + assignSource + ");"
+		stringReplacer.Replace(assign.Expression.Index0(), assign.Expression.Index1(), newAssignSource)
 	}
 
 	var propertyNames []string
 	for _, export := range properties {
 		exportStatement := export.ExportStatement
-		source = source[:exportStatement.Export-indexToRemove] + source[exportStatement.Statement.Index0()-indexToRemove:]
-		indexToRemove += 6
+		stringReplacer.Replace(exportStatement.Export, exportStatement.Statement.Index0(), "")
 		propertyNames = append(propertyNames, export.Name)
 		variables = append(variables, Variable{
 			Name:       export.Name,
@@ -159,13 +201,15 @@ func ReadScript(parserInstance *Parser, start int) ScriptSource {
 
 	end := parserInstance.Index
 	parserInstance.Index += 9
+
 	return ScriptSource{
-		StartIndex: start,
-		EndIndex:   end,
-		Program:    program,
-		Variables:  variables,
-		Imports:    importNames,
-		Source:     source,
-		Properties: propertyNames,
+		StartIndex:     start,
+		EndIndex:       end,
+		Program:        program,
+		Variables:      variables,
+		Imports:        importNames,
+		Source:         source,
+		Properties:     propertyNames,
+		StringReplacer: stringReplacer,
 	}
 }

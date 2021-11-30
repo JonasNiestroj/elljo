@@ -42,6 +42,7 @@ func (self *Parser) ParsePrimaryExpression() ast.Expression {
 	switch self.Token {
 	case token.IDENTIFIER:
 		self.NextToken()
+
 		if len(literal) > 1 {
 			isKeyword := token.StringIsKeyword(literal)
 			if isKeyword != 0 {

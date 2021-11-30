@@ -63,7 +63,7 @@ func (self *Generator) VisitLoop(children parser.Entry, current *Fragment) *Frag
 						$name$_iterations[i].update(variable);
 					}
 					const iteration = $name$_iterations[i];
-					iteration.update(this.$variableName$[i]);
+					iteration.update($variableName$[i]);
 				}
 				$name$_anchor.parentNode.insertBefore($name$_fragment, $name$_anchor);
 				$name$_iterations.length = $variableName$.length;`

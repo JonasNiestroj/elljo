@@ -103,7 +103,7 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 		ContextChain:       []string{"context", "dirtyInState", "oldState"},
 	}
 
-	js := parser.ScriptSource.Source
+	js := parser.ScriptSource.StringReplacer.String()
 
 	linesTillJs := 0
 
@@ -166,9 +166,6 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 		}
 	}
 
-	variables := ""
-	setIsDirtyFalse := ""
-
 	for _, variable := range parser.ScriptSource.Variables {
 		propertyUpdate := ""
 		for _, componentProperties := range self.componentProperties {
@@ -177,22 +174,7 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 					this['component-` + strconv.Itoa(componentProperties.Index) + `'].$props['` + id + `'] = value`
 			}
 		}
-		variables += `
-			Object.defineProperty(this, "` + variable.Name + `", {
-				get() {
-					return ` + variable.Name + `;
-				},
-				set(value) {
-					this.oldState["` + variable.Name + `"] = ` + variable.Name + `;
-					` + variable.Name + ` = value;
-					this.` + variable.Name + `IsDirty = true;
-					new Observer(value, "` + variable.Name + `")
-					this.queueUpdate(); ` + propertyUpdate + `
-				}
-			})
-		`
-		setIsDirtyFalse += `
-			this.` + variable.Name + `IsDirty = false;`
+
 	}
 
 	properties := ""
@@ -233,11 +215,10 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 
 			update() {
 				super.update()
-				` + setIsDirtyFalse + `
 			}
 
 			init(options, props, events) {
-				` + js + variables + strings.Join(renderersSources, "\n") + `
+				` + js + strings.Join(renderersSources, "\n") + `
 
 				` + properties + `		
 

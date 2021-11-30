@@ -101,7 +101,7 @@ func (self *Generator) VisitIf(children parser.Entry, current *Fragment) *Fragme
 	for _, declaration := range children.Expression.Body {
 		if id, ok := declaration.(*ast.ExpressionStatement); ok && id != nil {
 			variableName := children.ExpressionSource[id.Index0():id.Index1()]
-			updateStatementTemplate := `if(this.$variableName$){
+			updateStatementTemplate := `if($variableName$){
 				if(!$name$) $name$ = $renderer$($target$, $name$_anchor);
 			`
 
@@ -135,7 +135,7 @@ func (self *Generator) VisitIf(children parser.Entry, current *Fragment) *Fragme
 					}`
 				for _, elseIf := range elseIfs {
 					updateStatementTemplate += `
-						else if(this.` + elseIf.variable + `) {
+						else if(` + elseIf.variable + `) {
 							if(!` + elseIf.name + `) ` + elseIf.name + ` = ` + elseIf.renderer + `($target$, ` + elseIf.name + `_anchor);
 						`
 					for _, elseIfInner := range elseIfs {
@@ -177,7 +177,7 @@ func (self *Generator) VisitIf(children parser.Entry, current *Fragment) *Fragme
 					}`
 			} else if len(elseIfs) == 0 {
 				updateStatementTemplate += `
-				} else if(!this.$variableName$ && $name$){
+				} else if(!$variableName$ && $name$){
 					$name$.teardown();
 					$name$ = null;
 				}`

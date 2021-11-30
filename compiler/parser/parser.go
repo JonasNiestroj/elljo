@@ -2,6 +2,7 @@ package parser
 
 import (
 	"elljo/compiler/js-parser/ast"
+	"elljo/compiler/utils"
 	"regexp"
 )
 
@@ -23,13 +24,14 @@ type Entry struct {
 }
 
 type ScriptSource struct {
-	StartIndex int
-	EndIndex   int
-	Program    *ast.Program
-	Variables  []Variable
-	Imports    []Import
-	Source     string
-	Properties []string
+	StartIndex     int
+	EndIndex       int
+	Program        *ast.Program
+	Variables      []Variable
+	Imports        []Import
+	Source         string
+	Properties     []string
+	StringReplacer *utils.StringReplacer
 }
 
 type StyleSource struct {
