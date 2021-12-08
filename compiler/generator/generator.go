@@ -205,7 +205,7 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 			elementCache.` + key + ` = document.createElement("` + key + `");`
 	}
 
-	code += `import { setComponent, EllJoComponent, Observer } from 'elljo-runtime'
+	code += `import { setComponent, EllJoComponent, Observer } from '@elljo/runtime'
 		` + elementCache + `
 		class ` + self.FileName + ` extends EllJoComponent {
 			constructor(options, props, events) {

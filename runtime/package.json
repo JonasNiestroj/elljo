@@ -1,6 +1,6 @@
 {
-  "name": "elljo-runtime",
-  "version": "0.0.1",
+  "name": "@elljo/runtime",
+  "version": "0.0.1-alpha",
   "description": "Javascript runtime for the elljo framework",
   "main": "index.js",
   "scripts": {
