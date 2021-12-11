@@ -3,6 +3,7 @@ package generator
 import (
 	"elljo/compiler/parser"
 	"elljo/compiler/sourcemap"
+	"elljo/compiler/utils"
 	"strconv"
 	"strings"
 )
@@ -228,12 +229,11 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 		}
 		export default ` + self.FileName
 
-	style := parser.StyleSource.Source
-	indexToAdd := 0
+	stringReplacer := utils.StringReplacer{Text: parser.StyleSource.Source}
+
 	for _, rule := range parser.StyleSource.Rules {
-		style = style[0:rule.StartIndex+indexToAdd] + rule.Selector + "[scope-" + parser.StyleSource.Id + "]" + style[rule.EndIndex+indexToAdd:]
-		indexToAdd += 8 + len(parser.StyleSource.Id)
+		stringReplacer.Replace(rule.StartIndex, rule.EndIndex, rule.Selector+"[scope-"+parser.StyleSource.Id+"]")
 	}
 
-	return GeneratorOutput{Output: code, Sourcemap: sourcemap.CreateSourcemap(parser.FileName, mappingsStrings), Css: style}
+	return GeneratorOutput{Output: code, Sourcemap: sourcemap.CreateSourcemap(parser.FileName, mappingsStrings), Css: stringReplacer.String()}
 }
