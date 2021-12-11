@@ -14,6 +14,7 @@ import (
 func main() {
 	if os.Args[1] == "--service" {
 		service.RunService()
+		return
 	}
 	inputFile := os.Args[2]
 	data, err := ioutil.ReadFile(inputFile)
