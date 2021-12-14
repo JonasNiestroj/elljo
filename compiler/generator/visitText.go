@@ -3,7 +3,7 @@ package generator
 import "elljo/compiler/parser"
 
 func (self *Generator) VisitText(children parser.Entry, current *Fragment) *Fragment {
-	createStatementSource := current.Target + ".textContent = '" + children.Data + "';"
+	createStatementSource := current.Target + ".appendChild(document.createTextNode('" + children.Data + "'));"
 
 	createStatement := Statement{
 		source:   createStatementSource,

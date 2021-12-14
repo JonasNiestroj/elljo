@@ -21,6 +21,7 @@ type Entry struct {
 	HasElse          bool
 	ElseIfs          []*Entry
 	Else             *Entry
+	Namespace        string
 }
 
 type ScriptSource struct {

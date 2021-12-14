@@ -53,8 +53,8 @@ func ReadAttributeValue(parser *Parser) string {
 	return ""
 }
 
-func ReadAttributes(parser *Parser) []Attribute {
-	pattern, _ := regexp.Compile(`(=|>|\s)`)
+func ReadAttributes(parser *Parser, entry *Entry) []Attribute {
+	pattern, _ := regexp.Compile(`(/>|=|>|\s)`)
 	var attributes []Attribute
 	for {
 		parser.ReadWhitespace()
@@ -75,9 +75,13 @@ func ReadAttributes(parser *Parser) []Attribute {
 		if name == "class" {
 			name = "className"
 		}
+
 		isValueAttribute := parser.Read("=")
 		if isValueAttribute {
 			value := ReadAttributeValue(parser)
+			if name == "xmlns" {
+				entry.Namespace = value
+			}
 			if isEvent {
 				expression := ReadExpression(value)
 
@@ -131,7 +135,18 @@ func Tag(parser *Parser) {
 		return
 	}
 
-	attributes := ReadAttributes(parser)
+	entry := &Entry{
+		StartIndex: start,
+		EndIndex:   -1,
+		EntryType:  "Element",
+		Name:       name,
+		Children:   []*Entry{},
+		Attributes: []Attribute{},
+		Line:       line,
+		Namespace:  parser.Entries[len(parser.Entries)-1].Namespace,
+	}
+
+	entry.Attributes = ReadAttributes(parser, entry)
 
 	parser.ReadWhitespace()
 	if name == "script" || name == "style" {
@@ -143,7 +158,7 @@ func Tag(parser *Parser) {
 
 		if name == "style" {
 			isGlobal := false
-			for _, attribute := range attributes {
+			for _, attribute := range entry.Attributes {
 				if attribute.Name == "global" {
 					isGlobal = true
 				}
@@ -151,16 +166,6 @@ func Tag(parser *Parser) {
 			parser.StyleSource = ReadStyle(parser, parser.Index, isGlobal)
 		}
 		return
-	}
-
-	entry := &Entry{
-		StartIndex: start,
-		EndIndex:   -1,
-		EntryType:  "Element",
-		Name:       name,
-		Children:   []*Entry{},
-		Attributes: attributes,
-		Line:       line,
 	}
 
 	parser.Entries[len(parser.Entries)-1].Children = append(parser.Entries[len(parser.Entries)-1].Children, entry)
