@@ -72,9 +72,6 @@ func ReadAttributes(parser *Parser, entry *Entry) []Attribute {
 			isEvent = true
 			name = name[1:]
 		}
-		if name == "class" {
-			name = "className"
-		}
 
 		isValueAttribute := parser.Read("=")
 		if isValueAttribute {
