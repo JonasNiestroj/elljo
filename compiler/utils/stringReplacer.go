@@ -31,6 +31,7 @@ func (stringReplacer *StringReplacer) String() string {
 
 	if len(stringReplacer.chunks) == 0 {
 		buildedString = stringReplacer.Text
+		lastEndIndex = len(stringReplacer.Text)
 	}
 
 	for _, chunk := range stringReplacer.chunks {
