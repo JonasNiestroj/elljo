@@ -7,7 +7,7 @@ EllJo is a web framework focused on performance. The compiler is written in gola
 
 ## Documentation
 
-TODO
+You can find the documentation on [elljo.com](https://elljo.com)
 
 ## Useful tools
 
