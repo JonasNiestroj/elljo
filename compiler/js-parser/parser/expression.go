@@ -18,7 +18,6 @@ func (self *Parser) ParseIdentifier() *ast.Identifier {
 func (self *Parser) ParseExpression() ast.Expression {
 	next := self.ParseAssignmentExpression
 	left := next()
-
 	if self.Token == token.COMMA {
 		sequence := []ast.Expression{left}
 		for {
@@ -102,9 +101,11 @@ func (self *Parser) ParsePrimaryExpression() ast.Expression {
 		return self.ParseArrayLiteral()
 	case token.LEFT_PARENTHESIS:
 		self.ExpectToken(token.LEFT_PARENTHESIS)
+		if self.Token == token.RIGHT_PARENTHESIS {
+			return self.ParseArrowFunction()
+		}
 		expression := self.ParseExpression()
 		self.ExpectToken(token.RIGHT_PARENTHESIS)
-
 		return expression
 	case token.THIS:
 		self.NextToken()
@@ -773,6 +774,7 @@ func (self *Parser) ParseConditionalExpression() ast.Expression {
 func (self *Parser) ParseAssignmentExpression() ast.Expression {
 	left := self.ParseConditionalExpression()
 	var operator token.Token
+
 	if self.Token == token.ARROW_FUNCTION {
 		return self.ParseArrowFunction()
 	}
