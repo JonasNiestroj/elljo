@@ -1,5 +1,4 @@
 import { setComponent, currentComponent } from './lifecycleHooks';
-import Observer from './observer';
 
 export default class EllJoComponent {
   constructor(options, props, events) {
