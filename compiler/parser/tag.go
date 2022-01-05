@@ -2,6 +2,7 @@ package parser
 
 import (
 	"elljo/compiler/js-parser/ast"
+	"elljo/compiler/utils"
 	"regexp"
 	"strings"
 )
@@ -144,6 +145,11 @@ func Tag(parser *Parser) {
 	}
 
 	entry.Attributes = ReadAttributes(parser, entry)
+
+	// Lets initialize an empty ScriptSource to prevent errors with no script tag
+	parser.ScriptSource = ScriptSource{
+		StringReplacer: &utils.StringReplacer{},
+	}
 
 	parser.ReadWhitespace()
 	if name == "script" || name == "style" {
