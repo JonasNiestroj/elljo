@@ -1,3 +1,5 @@
 {
-  "pluginsFile": "cypress/plugins/index.js"
+  "pluginsFile": "cypress/plugins/index.js",
+  "componentFolder": "cypress/tests",
+  "testFiles": "**/*.spec.js"
 }

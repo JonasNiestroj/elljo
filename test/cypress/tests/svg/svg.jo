@@ -1,0 +1,36 @@
+<main>
+<svg
+  class="icon"
+  xmlns="http://www.w3.org/2000/svg"
+  xml:space="preserve"
+  fill-rule="evenodd"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  stroke-miterlimit="1.5"
+  clip-rule="evenodd"
+  viewBox="0 0 280 512"
+>
+  <path
+    fill="url(#a)"
+    stroke="#000"
+    stroke-width="4.17"
+    d="m174.229 93.75 102.854 1.214-20.466 43.89-98.284-.173-47.916 100 129.382.12-18.966 41.547h-93.75l-46.322 99.338 137.989.662-18.961 41.667H68.75l-38.759 87.5 34.592-229.167h-62.5L218.75 2.083 174.229 93.75Z"
+  />
+  <defs>
+    <linearGradient
+      id="a"
+      x1="0"
+      x2="1"
+      y1="0"
+      y2="0"
+      gradientTransform="matrix(275 0 0 507.431 2.083 255.799)"
+      gradientUnits="userSpaceOnUse"
+    >
+      <stop offset="0" stop-color="#a05600" />
+      <stop offset="1" stop-color="#ff9c12" />
+    </linearGradient>
+  </defs>
+</svg>
+</main>
+
+<script></script>

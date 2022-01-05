@@ -5,6 +5,6 @@
 let title = "hello world"
 
 const updateTitle = () => {
-  this.title = "new world"
+  title = "new world"
 }
 </script>

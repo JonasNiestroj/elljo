@@ -1,6 +1,13 @@
 {
+  "scripts": {
+    "test": "cypress run-ct"
+  },
   "devDependencies": {
+    "@cypress/vite-dev-server": "^2.2.2",
     "child_process": "^1.0.2",
-    "cypress": "^7.3.0"
+    "cypress": "^9.2.0",
+    "@elljo/compiler": "^0.0.2-alpha",
+    "@elljo/runtime": "^0.0.2-alpha",
+    "vite-plugin-elljo": "^0.0.2-alpha"
   }
 }

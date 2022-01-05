@@ -1,12 +1,13 @@
 {{#if visible}}
   <p>Hello world</p>
 {{/if}}
+
 <button $click="toggleVisible">Toggle</button>
 
 <script>
 let visible = true;
 
 const toggleVisible = () => {
-  this.visible = !this.visible;
+  visible = !visible;
 }
 </script>
