@@ -1,12 +1,12 @@
 {
     "name": "elljo",
-    "version": "0.0.1-alpha",
+    "version": "0.0.2-alpha",
     "description": "The EllJo Framework",
     "main": "index.js",
     "dependencies": {
-        "@elljo/compiler": "0.0.1-alpha",
-        "vite-plugin-elljo": "0.0.1-alpha",
-        "@elljo/runtime": "0.0.1-alpha"
+        "@elljo/compiler": "0.0.2-alpha",
+        "vite-plugin-elljo": "0.0.2-alpha",
+        "@elljo/runtime": "0.0.2-alpha"
     },
     "repository": {
         "type": "git",
