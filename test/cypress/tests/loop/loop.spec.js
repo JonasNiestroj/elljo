@@ -11,7 +11,12 @@ context('loop', () => {
   });
 
   it('adds one children on new array', () => {
-    cy.get('button').click();
+    cy.get('#add').click();
     cy.get('p').should('have.length', 4);
+  });
+
+  it('removes one children on array remove', () => {
+    cy.get('#remove').click();
+    cy.get('p').should('have.length', 2);
   });
 });

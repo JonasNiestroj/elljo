@@ -1,12 +1,17 @@
 {{#loop pets as x}}
     <p>{{x}}</p>
 {{/loop}}
-<button $click="add">Add</button>
+<button id="add" $click="add">Add</button>
+<button id="remove" $click="remove">Remove</button>
 
 <script>
 let pets = ['Dog', 'Cat', 'Snake']
 
 const add = () => {
     pets = [...pets, 'Rabbit']
+}
+
+const remove = () => {
+    pets = [...pets.slice(0, pets.length - 1)];
 }
 </script>
