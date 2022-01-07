@@ -5,7 +5,7 @@
     "main": "index.js",
     "dependencies": {
         "@elljo/compiler": "0.0.2-alpha",
-        "vite-plugin-elljo": "0.0.2-alpha",
+        "vite-plugin-elljo": "0.0.3-alpha",
         "@elljo/runtime": "0.0.2-alpha"
     },
     "repository": {
