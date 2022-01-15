@@ -4,6 +4,7 @@ import (
 	"elljo/compiler/js-parser/ast"
 	"elljo/compiler/js-parser/token"
 	"elljo/compiler/js-parser/unistring"
+	"elljo/compiler/utils"
 )
 
 type Parser struct {
@@ -21,7 +22,7 @@ type Parser struct {
 	Scope             *Scope
 	InsertSemicolon   bool
 	ImplicitSemicolon bool
-	Errors            ErrorList
+	Errors            []utils.Error
 	Recover           struct {
 		Index int
 		Count int
@@ -39,13 +40,11 @@ func NewParser(src string, base int) *Parser {
 	return parser
 }
 
-func (self *Parser) Parse() (*ast.Program, error) {
+func (self *Parser) Parse() *ast.Program {
 	self.NextToken()
 	program := self.ParseProgram()
-	if false {
-		self.Errors.Sort()
-	}
-	return program, self.Errors.Err()
+
+	return program
 }
 
 func (self *Parser) NextToken() {

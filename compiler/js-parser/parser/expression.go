@@ -45,7 +45,7 @@ func (self *Parser) ParsePrimaryExpression() ast.Expression {
 		if len(literal) > 1 {
 			isKeyword := token.StringIsKeyword(literal)
 			if isKeyword != 0 {
-				self.Error("Unexpected reserved keyword")
+				self.Error(index, "Unexpected reserved keyword")
 			}
 		}
 		return &ast.Identifier{
@@ -67,7 +67,7 @@ func (self *Parser) ParsePrimaryExpression() ast.Expression {
 		case "false":
 			value = false
 		default:
-			self.Error("Illegal boolean literal")
+			self.Error(index, "Illegal boolean literal")
 		}
 		return &ast.BooleanLiteral{
 			Index:   index,
@@ -85,7 +85,7 @@ func (self *Parser) ParsePrimaryExpression() ast.Expression {
 		self.NextToken()
 		value, err := ParseNumberLiteral(literal)
 		if err != nil {
-			self.Error(err.Error())
+			self.Error(self.Index, err.Error())
 			value = 0
 		}
 		return &ast.NumberLiteral{
@@ -120,7 +120,7 @@ func (self *Parser) ParsePrimaryExpression() ast.Expression {
 		return self.ParseSpreadElement()
 	}
 
-	self.ErrorUnexpectedToken(self.Token)
+	self.ErrorUnexpectedToken(self.Token, index)
 	self.NextStatement()
 	return &ast.BadExpression{From: index, To: self.Index}
 }
@@ -232,7 +232,7 @@ func (self *Parser) ParseObjectPropertyKey() (literal string, tkn token.Token, e
 	case token.NUMBER:
 		num, err := ParseNumberLiteral(literal)
 		if err != nil {
-			self.Error(err.Error())
+			self.Error(index, err.Error())
 		} else {
 			value = &ast.NumberLiteral{
 				Index:   index,
@@ -421,7 +421,7 @@ func (self *Parser) ParseNewExpression() ast.Expression {
 		prop := self.ParseIdentifier()
 		if prop.Name == "target" {
 			if !self.Scope.InFunction {
-				self.Error("new.target expression is not allowed here")
+				self.Error(index, "new.target expression is not allowed here")
 			}
 			return &ast.MetaProperty{
 				Meta: &ast.Identifier{
@@ -431,7 +431,7 @@ func (self *Parser) ParseNewExpression() ast.Expression {
 				Property: prop,
 			}
 		}
-		self.ErrorUnexpectedToken(token.IDENTIFIER)
+		self.ErrorUnexpectedToken(token.IDENTIFIER, self.Index)
 	}
 
 	callee := self.ParseLeftHandSideExpression()
@@ -514,7 +514,7 @@ func (self *Parser) ParsePostfixExpression() ast.Expression {
 		switch operand.(type) {
 		case *ast.Identifier, *ast.DotExpression, *ast.BracketExpression:
 		default:
-			self.Error("Invalid left-hand side in assigment")
+			self.Error(index, "Invalid left-hand side in assigment")
 			self.NextStatement()
 			return &ast.BadExpression{From: index, To: self.Index}
 		}
@@ -549,7 +549,7 @@ func (self *Parser) ParseUnaryExpression() ast.Expression {
 		switch operand.(type) {
 		case *ast.Identifier, *ast.DotExpression, *ast.BracketExpression:
 		default:
-			self.Error("Invalid left-hand side in assignment")
+			self.Error(index, "Invalid left-hand side in assignment")
 			self.NextStatement()
 			return &ast.BadExpression{From: index, To: self.Index}
 		}
@@ -814,7 +814,7 @@ func (self *Parser) ParseAssignmentExpression() ast.Expression {
 		switch left.(type) {
 		case *ast.Identifier, *ast.DotExpression, *ast.BracketExpression:
 		default:
-			self.Error("Invalid left-hand side in assignment")
+			self.Error(index, "Invalid left-hand side in assignment")
 			self.NextStatement()
 			return &ast.BadExpression{From: index, To: self.Index}
 		}

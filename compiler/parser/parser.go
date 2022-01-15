@@ -22,6 +22,7 @@ type Entry struct {
 	ElseIfs          []*Entry
 	Else             *Entry
 	Namespace        string
+	LoopIndices      []int
 }
 
 type ScriptSource struct {
@@ -51,7 +52,7 @@ type Parser struct {
 	ScriptSource       ScriptSource
 	StyleSource        StyleSource
 	currentLine        int
-	Errors             []Error
+	Errors             []utils.Error
 	PossibleErrorIndex int
 	lineStartIndex     int
 }
@@ -129,6 +130,11 @@ func (self *Parser) ReadWhitespace() {
 		self.currentLine += newLines
 		self.lineStartIndex = self.Index
 	}
+}
+
+func (self *Parser) IsWhitespace() bool {
+	var match, _ = regexp.MatchString(`\s`, string(self.Template[self.Index]))
+	return match
 }
 
 func (self *Parser) ReadUntil(pattern *regexp.Regexp) string {

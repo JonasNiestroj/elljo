@@ -4,7 +4,6 @@ import (
 	"elljo/compiler/parser"
 	"elljo/compiler/sourcemap"
 	"elljo/compiler/utils"
-	"strconv"
 	"strings"
 )
 
@@ -28,6 +27,7 @@ type Fragment struct {
 	HasContext         bool
 	Mappings           [][]int
 	UpdateContextChain string
+	NeedsAppend        bool
 }
 
 type Statement struct {
@@ -46,6 +46,7 @@ type Generator struct {
 	componentProperties []ComponentProperties
 	FileName            string
 	elements            map[string]struct{}
+	loops               []string
 }
 
 type GeneratorOutput struct {
@@ -92,8 +93,54 @@ func (self *Generator) Visit(parser parser.Parser, children parser.Entry, curren
 	}
 }
 
+func (self *Generator) getJsSourceMap(parser parser.Parser, js string) [][]int {
+	linesTillJs := utils.CountLines(parser.Template[0:parser.ScriptSource.StartIndex])
+
+	jsLines := strings.Split(js, "\n")
+
+	mappings := [][]int{{}, {}}
+
+	for index, _ := range jsLines {
+		if index == len(jsLines)-1 {
+			break
+		}
+		lineIndex := linesTillJs + (index + 1)
+		mappings = append(mappings, []int{0, 0, lineIndex, 0})
+	}
+
+	return mappings
+}
+
+func (self *Generator) getSourceMapMapping(parser parser.Parser, mappings [][]int) string {
+
+	var sourceMapMapping strings.Builder
+	var lastLine []int
+
+	// Add ; for every import
+	sourceMapMapping.WriteString(strings.Repeat(";", len(parser.ScriptSource.Imports)))
+
+	for i := 0; i < len(mappings); i++ {
+		mapping := mappings[i]
+		if len(mapping) > 0 {
+			if len(lastLine) != 0 {
+				cpy := mapping[2]
+				mapping[2] = mapping[2] - lastLine[2]
+				lastLine = []int{mapping[0], mapping[1], cpy, mapping[3]}
+			} else {
+				lastLine = mapping
+			}
+			sourceMapMapping.WriteString(sourcemap.EncodeValues([]int{mapping[0], mapping[1], mapping[2], mapping[3]}) + ";")
+		} else {
+			sourceMapMapping.WriteString(";")
+		}
+	}
+
+	return sourceMapMapping.String()
+}
+
 func (self *Generator) Generate(parser parser.Parser, template string) GeneratorOutput {
 	self.elements = make(map[string]struct{})
+
 	current := Fragment{
 		UseAnchor:          false,
 		Name:               "render",
@@ -106,77 +153,28 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 
 	js := parser.ScriptSource.StringReplacer.String()
 
-	linesTillJs := 0
-
-	for _, c := range template[0:parser.ScriptSource.StartIndex] {
-		if c == '\n' {
-			linesTillJs++
-		}
-	}
-
-	mappings := [][]int{{}, {}}
-
-	for index, _ := range strings.Split(js, "\n") {
-		if index == len(strings.Split(js, "\n"))-1 {
-			break
-		}
-		lineIndex := linesTillJs + (index + 1)
-		mappings = append(mappings, []int{0, 0, lineIndex, 0})
-	}
+	decodedSourceMapMappings := self.getJsSourceMap(parser, js)
 
 	self.Visit(parser, *parser.Entries[0], &current, template)
 
 	self.renderers = append(self.renderers, self.CreateRenderer(current))
 
-	for i, j := 0, len(self.renderers)-1; i < j; i, j = i+1, j-1 {
-		self.renderers[i], self.renderers[j] = self.renderers[j], self.renderers[i]
-	}
+	utils.ReverseSlice(self.renderers)
 
 	var renderersSources []string
 
 	for _, renderer := range self.renderers {
 		renderersSources = append(renderersSources, renderer.source)
-		mappings = append(mappings, renderer.mappings...)
+		decodedSourceMapMappings = append(decodedSourceMapMappings, renderer.mappings...)
 	}
 
-	var mappingsStrings []string
-
-	var lastLine []int
-
-	code := ""
+	var code strings.Builder
 
 	for _, importVar := range parser.ScriptSource.Imports {
-		code += importVar.Source + `
-`
-		mappingsStrings = append(mappingsStrings, ";")
+		code.WriteString(importVar.Source + "\n")
 	}
 
-	for i := 0; i < len(mappings); i++ {
-		mapping := mappings[i]
-		if len(mapping) > 0 {
-			if len(lastLine) != 0 {
-				copy := mapping[2]
-				mapping[2] = mapping[2] - lastLine[2]
-				lastLine = []int{mapping[0], mapping[1], copy, mapping[3]}
-			} else {
-				lastLine = mapping
-			}
-			mappingsStrings = append(mappingsStrings, sourcemap.EncodeValues([]int{mapping[0], mapping[1], mapping[2], mapping[3]})+";")
-		} else {
-			mappingsStrings = append(mappingsStrings, ";")
-		}
-	}
-
-	for _, variable := range parser.ScriptSource.Variables {
-		propertyUpdate := ""
-		for _, componentProperties := range self.componentProperties {
-			if id, ok := componentProperties.Properties[variable.Name]; ok {
-				propertyUpdate += `
-					this['component-` + strconv.Itoa(componentProperties.Index) + `'].$props['` + id + `'] = value`
-			}
-		}
-
-	}
+	sourceMapMapping := self.getSourceMapMapping(parser, decodedSourceMapMappings)
 
 	properties := ""
 
@@ -191,7 +189,7 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 					return this.` + property + `;
 				},
 				set(value) {
-					that.` + property + ` = value;
+					that.updateValue("` + property + `", ` + property + ` = value);
 				}
 			})
 			if(props['` + property + `']) {
@@ -206,7 +204,7 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 			elementCache.` + key + ` = document.createElement("` + key + `");`
 	}
 
-	code += `import { setComponent, EllJoComponent } from '@elljo/runtime'
+	code.WriteString(`import { setComponent, EllJoComponent, createFragment } from '@elljo/runtime'
 		` + elementCache + `
 		class ` + self.FileName + ` extends EllJoComponent {
 			constructor(options, props, events) {
@@ -227,7 +225,7 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 				this.queueUpdate();
 			}
 		}
-		export default ` + self.FileName
+		export default ` + self.FileName)
 
 	stringReplacer := utils.StringReplacer{Text: parser.StyleSource.Source}
 
@@ -235,5 +233,5 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 		stringReplacer.Replace(rule.StartIndex, rule.EndIndex, rule.Selector+"[scope-"+parser.StyleSource.Id+"]")
 	}
 
-	return GeneratorOutput{Output: code, Sourcemap: sourcemap.CreateSourcemap(parser.FileName, mappingsStrings), Css: stringReplacer.String()}
+	return GeneratorOutput{Output: code.String(), Sourcemap: sourcemap.CreateSourcemap(parser.FileName, sourceMapMapping), Css: stringReplacer.String()}
 }

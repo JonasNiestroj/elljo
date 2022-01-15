@@ -1,6 +1,9 @@
 package generator
 
-import "strings"
+import (
+	"elljo/compiler/utils"
+	"strings"
+)
 
 type Renderer struct {
 	source   string
@@ -74,7 +77,7 @@ func (self *Generator) CreateRenderer(fragment Fragment) Renderer {
 		"updateContextChain":      fragment.UpdateContextChain,
 		"updateContextChainParam": updateContextChainParam,
 	}
-	renderer := self.BuildString(template, variables)
+	renderer := utils.BuildString(template, variables)
 
 	return Renderer{
 		source:   renderer,

@@ -36,6 +36,7 @@ func main() {
 		}
 		return
 	}
+
 	if os.Args[1] == "generate" {
 		var generatorInstance = generator.Generator{
 			FileName: "Component",

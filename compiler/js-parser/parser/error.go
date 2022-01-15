@@ -2,8 +2,9 @@ package parser
 
 import (
 	"elljo/compiler/js-parser/token"
+	"elljo/compiler/utils"
 	"fmt"
-	"sort"
+	"strings"
 )
 
 const (
@@ -11,78 +12,44 @@ const (
 	err_UnexpectedEndOfInput = "Unexpected end of input"
 )
 
-type Error struct {
-	Message string
-}
+func (self *Parser) Error(startIndex int, msg string, msgValues ...interface{}) {
+	currentLine := strings.Count(self.Template[:self.Index], "\n") + 1
+	startColumn := startIndex - strings.LastIndex(self.Template[:startIndex], "\n")
+	endColumn := self.Index - strings.LastIndex(self.Template[:self.Index], "\n")
 
-func (self Error) Error() string {
-	return fmt.Sprintf("%s", self.Message)
-}
-
-func (self *Parser) Error(msg string, msgValues ...interface{}) *Error {
 	msg = fmt.Sprintf(msg, msgValues...)
-	self.Errors.Add(msg)
-	return self.Errors[len(self.Errors)-1]
+	self.Errors = append(self.Errors, utils.Error{
+		Message:     msg,
+		StartColumn: startColumn,
+		EndColumn:   endColumn,
+		Line:        currentLine,
+	})
 }
 
-func (self *Parser) ErrorUnexpected(chr rune) error {
+func (self *Parser) ErrorUnexpected(chr rune, startIndex int) {
 	if chr == -1 {
-		return self.Error(err_UnexpectedEndOfInput)
+		self.Error(startIndex, err_UnexpectedEndOfInput)
 	}
-	return self.Error(err_UnexpectedToken, token.ILLEGAL)
+	self.Error(startIndex, err_UnexpectedToken, token.ILLEGAL)
 }
 
-func (self *Parser) ErrorUnexpectedToken(tkn token.Token) error {
+func (self *Parser) ErrorUnexpectedToken(tkn token.Token, startIndex int) {
 	switch tkn {
 	case token.EOF:
-		return self.Error(err_UnexpectedEndOfInput)
+		self.Error(startIndex, err_UnexpectedEndOfInput)
 	}
 	value := tkn.ToString()
 	switch tkn {
 	case token.BOOLEAN, token.NULL:
 		value = self.Literal
 	case token.IDENTIFIER:
-		return self.Error("Unexpected identifer")
+		self.Error(startIndex, "Unexpected identifier")
 	case token.KEYWORD:
-		return self.Error("Unsepected reserved word")
+		self.Error(startIndex, "Unexpected reserved word")
 	case token.NUMBER:
-		return self.Error("Unexpected number")
+		self.Error(startIndex, "Unexpected number")
 	case token.STRING:
-		return self.Error("Unexpected string")
+		self.Error(startIndex, "Unexpected string")
 	}
-	return self.Error(err_UnexpectedToken, value)
-}
-
-type ErrorList []*Error
-
-func (self *ErrorList) Add(msg string) {
-	*self = append(*self, &Error{msg})
-}
-
-func (self *ErrorList) Reset()       { *self = (*self)[0:0] }
-func (self ErrorList) Len() int      { return len(self) }
-func (self ErrorList) Swap(i, j int) { self[i], self[j] = self[j], self[i] }
-func (self ErrorList) Less(i, j int) bool {
-	return false
-}
-
-func (self ErrorList) Sort() {
-	sort.Sort(self)
-}
-
-func (self ErrorList) Error() string {
-	switch len(self) {
-	case 0:
-		return "no errors"
-	case 1:
-		return self[0].Error()
-	}
-	return fmt.Sprintf("%s (and %d more errors)", self[0].Error(), len(self)-1)
-}
-
-func (self ErrorList) Err() error {
-	if len(self) == 0 {
-		return nil
-	}
-	return self
+	self.Error(startIndex, err_UnexpectedToken, value)
 }

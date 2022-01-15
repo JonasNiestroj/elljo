@@ -311,7 +311,7 @@ func (self *Parser) Scan() (tkn token.Token, literal string, parsedLiteral unist
 					tkn = token.ILLEGAL
 				}
 			default:
-				self.ErrorUnexpected(chr)
+				self.ErrorUnexpected(chr, index)
 				tkn = token.ILLEGAL
 			}
 		}
@@ -393,7 +393,7 @@ func (self *Parser) Read() {
 		if chr >= utf8.RuneSelf {
 			chr, width = utf8.DecodeRuneInString(self.Template[self.Offset:])
 			if chr == utf8.RuneError && width == 1 {
-				self.Error("Invalid UTF-8 character")
+				self.Error(self.Index, "Invalid UTF-8 character")
 			}
 		}
 		self.Offset += width
@@ -414,6 +414,7 @@ func (self *Parser) SkipSingleLineComment() {
 }
 
 func (self *Parser) SkipMultiLineComment() {
+	start := self.Index
 	self.Read()
 	for self.Char >= 0 {
 		chr := self.Char
@@ -423,7 +424,7 @@ func (self *Parser) SkipMultiLineComment() {
 			return
 		}
 	}
-	self.ErrorUnexpected(self.Char)
+	self.ErrorUnexpected(self.Char, start)
 }
 
 func (self *Parser) SkipWhiteSpace() {
@@ -569,7 +570,7 @@ func (self *Parser) CheckNewLine(quote rune) (literal string, parsed unistring.S
 	errStr := "String not terminated"
 	if quote == '/' {
 		errStr = "Invalid regular expression: missing /"
-		self.Error(errStr)
+		self.Error(self.Index, errStr)
 	}
 	return "", "", errors.New(errStr)
 }
@@ -803,7 +804,7 @@ func (self *Parser) ScanNumericLiteral(decimalPoint bool) (token.Token, string) 
 			self.ScanMantissa(16)
 
 			if self.CharOffset-offset <= 2 {
-				self.Error("Illegal hexadecimal number")
+				self.Error(self.Index, "Illegal hexadecimal number")
 			}
 
 			goto hexadecimal

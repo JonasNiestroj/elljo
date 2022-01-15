@@ -6,18 +6,18 @@ import (
 )
 
 type Scope struct {
-	Outer *Scope
-	AllowIn bool
-	InIteration bool
-	InSwitch bool
-	InFunction bool
+	Outer           *Scope
+	AllowIn         bool
+	InIteration     bool
+	InSwitch        bool
+	InFunction      bool
 	DeclarationList []ast.Declaration
-	Labels []unistring.String
+	Labels          []unistring.String
 }
 
 func (self *Parser) OpenScope() {
 	self.Scope = &Scope{
-		Outer: self.Scope,
+		Outer:   self.Scope,
 		AllowIn: true,
 	}
 }

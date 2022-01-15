@@ -37,8 +37,8 @@ func (s String) AsUtf16() []uint16 {
 	hdr := (*reflect.StringHeader)(unsafe.Pointer(&raw))
 	a := *(*[]uint16)(unsafe.Pointer(&reflect.SliceHeader{
 		Data: hdr.Data,
-		Len: l,
-		Cap: l,
+		Len:  l,
+		Cap:  l,
 	}))
 	if a[0] == BOM {
 		return a

@@ -34,7 +34,7 @@ func (self *Parser) ParseExportStatement() ast.Statement {
 
 func (self *Parser) ParseStatement() ast.Statement {
 	if self.Token == token.EOF {
-		self.ErrorUnexpectedToken(self.Token)
+		self.ErrorUnexpectedToken(self.Token, self.Index)
 		return &ast.BadStatement{From: self.Index, To: self.Index + 1}
 	}
 
@@ -86,7 +86,7 @@ func (self *Parser) ParseStatement() ast.Statement {
 		label := identifier.Name
 		for _, value := range self.Scope.Labels {
 			if label == value {
-				self.Error("Label '%s' already exists", label)
+				self.Error(self.Index, "Label '%s' already exists", label)
 			}
 		}
 		self.Scope.Labels = append(self.Scope.Labels, label)
@@ -135,7 +135,7 @@ func (self *Parser) ParseTryStatement() ast.Statement {
 	}
 
 	if node.Catch == nil && node.Finally == nil {
-		self.Error("Missing catch or finally after try")
+		self.Error(self.Index, "Missing catch or finally after try")
 		return &ast.BadStatement{From: node.Try, To: node.Body.Index1()}
 	}
 
@@ -290,7 +290,7 @@ func (self *Parser) ParseReturnStatement() ast.Statement {
 	index := self.ExpectToken(token.RETURN)
 
 	if !self.Scope.InFunction {
-		self.Error("Illegal return statement")
+		self.Error(index, "Illegal return statement")
 		self.NextStatement()
 		return &ast.BadStatement{From: index, To: self.Index}
 	}
@@ -312,9 +312,9 @@ func (self *Parser) ParseThrowStatement() ast.Statement {
 
 	if self.ImplicitSemicolon {
 		if self.Char == -1 {
-			self.Error("Unexpected end of input")
+			self.Error(index, "Unexpected end of input")
 		} else {
-			self.Error("Illegal newline after throw")
+			self.Error(index, "Illegal newline after throw")
 		}
 		self.NextStatement()
 		return &ast.BadStatement{From: index, To: self.Index}
@@ -352,7 +352,7 @@ func (self *Parser) ParseSwitchStatement() ast.Statement {
 		clause := self.ParseCaseStatement()
 		if clause.Test == nil {
 			if node.Default != -1 {
-				self.Error("Already saw a default in switch")
+				self.Error(index, "Already saw a default in switch")
 			}
 			node.Default = index
 		}
@@ -494,7 +494,7 @@ func (self *Parser) ParseForOrForInStatement() ast.Statement {
 		switch left[0].(type) {
 		case *ast.Identifier, *ast.DotExpression, *ast.BracketExpression, *ast.VariableExpression:
 		default:
-			self.Error("Invalid left-hand side in for-in or for-of")
+			self.Error(index, "Invalid left-hand side in for-in or for-of")
 			self.NextStatement()
 			return &ast.BadStatement{From: index, To: self.Index}
 		}
@@ -626,7 +626,7 @@ func (self *Parser) ParseBreakStatement() ast.Statement {
 	if self.Token == token.IDENTIFIER {
 		identifier := self.ParseIdentifier()
 		if !self.Scope.HasLabel(identifier.Name) {
-			self.Error("Undefined label '%s'", identifier.Name)
+			self.Error(index, "Undefined label '%s'", identifier.Name)
 			return &ast.BadStatement{From: index, To: identifier.Index1()}
 		}
 		self.Semicolon()
@@ -641,7 +641,7 @@ func (self *Parser) ParseBreakStatement() ast.Statement {
 }
 
 func (self *Parser) CreateBadStatement(index int, message string) ast.Statement {
-	self.Error(message)
+	self.Error(index, message)
 	self.NextStatement()
 	return &ast.BadStatement{From: index, To: self.Index}
 }
@@ -668,7 +668,7 @@ func (self *Parser) ParseContinueStatement() ast.Statement {
 	if self.Token == token.IDENTIFIER {
 		identifier := self.ParseIdentifier()
 		if !self.Scope.HasLabel(identifier.Name) {
-			self.Error("Undefined label '%s'", identifier.Name)
+			self.Error(index, "Undefined label '%s'", identifier.Name)
 			return &ast.BadStatement{From: index, To: identifier.Index1()}
 		}
 		if !self.Scope.InIteration {

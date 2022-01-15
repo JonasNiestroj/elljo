@@ -3,6 +3,7 @@ package generator
 import (
 	"elljo/compiler/js-parser/ast"
 	"elljo/compiler/parser"
+	"elljo/compiler/utils"
 	"strconv"
 )
 
@@ -74,7 +75,7 @@ func (self *Generator) VisitIf(children parser.Entry, current *Fragment) *Fragme
 	}
 
 	createStatement := Statement{
-		source:   self.BuildString(template, variables),
+		source:   utils.BuildString(template, variables),
 		mappings: [][]int{{}, {}, {}},
 	}
 
@@ -193,7 +194,7 @@ func (self *Generator) VisitIf(children parser.Entry, current *Fragment) *Fragme
 			}
 
 			updateStatement := Statement{
-				source:   self.BuildString(updateStatementTemplate, variables),
+				source:   utils.BuildString(updateStatementTemplate, variables),
 				mappings: [][]int{{0, 0, children.Line, 0}, {}, {}, {}, {}, {}, {}, {}, {}},
 			}
 

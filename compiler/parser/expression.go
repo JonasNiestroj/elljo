@@ -7,9 +7,9 @@ import (
 
 func ReadExpression(src string) *ast.Program {
 	parserInstance := parser.NewParser(src, 0)
-	program, err := parserInstance.Parse()
-	if err != nil {
-		panic(err)
+	program := parserInstance.Parse()
+	if len(parserInstance.Errors) > 0 {
+		return nil
 	}
 	return program
 }

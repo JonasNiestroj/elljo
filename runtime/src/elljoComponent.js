@@ -8,6 +8,7 @@ export default class EllJoComponent {
     this.$.mounted = [];
     this.$.update = [];
     this.$props = {};
+    this.$propsBindings = {};
     this.$events = {};
     this.oldState = {};
     this.updating = false;
@@ -69,7 +70,13 @@ export default class EllJoComponent {
 
   updateValue(name, func) {
     currentComponent[name + 'IsDirty'] = true;
-    currentComponent.queueUpdate();
+    if (this.$propsBindings[name]) {
+      for (let i = 0; i < this.$propsBindings[name].length; i++) {
+        this[this.$propsBindings[name][i]].$props[name] = func;
+      }
+    }
+
+    this.queueUpdate();
   }
 
   update() {

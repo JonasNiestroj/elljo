@@ -29,7 +29,7 @@ func (self *Parser) ExpectToken(values ...token.Token) int {
 	}
 
 	if !contains {
-		self.ErrorUnexpectedToken(self.Token)
+		self.ErrorUnexpectedToken(self.Token, index)
 	}
 	self.NextToken()
 	return index

@@ -119,6 +119,7 @@ func variablesContains(name string) bool {
 }
 
 func ReadScript(parserInstance *Parser, start int) ScriptSource {
+	scriptStartLine := parserInstance.currentLine
 	scriptStart := parserInstance.Index
 	pattern, _ := regexp.Compile("</script>")
 	parserInstance.ReadUntil(pattern)
@@ -127,10 +128,20 @@ func ReadScript(parserInstance *Parser, start int) ScriptSource {
 
 	jsParserInstance := parser.NewParser(source, 0)
 
-	program, err := jsParserInstance.Parse()
+	program := jsParserInstance.Parse()
 
-	if err != nil {
-		panic(err)
+	if len(jsParserInstance.Errors) > 0 {
+		var errors []utils.Error
+
+		// We need to update the error lines
+		for _, err := range jsParserInstance.Errors {
+			err.Line += scriptStartLine
+			errors = append(errors, err)
+		}
+
+		parserInstance.Errors = append(parserInstance.Errors, errors...)
+
+		return ScriptSource{}
 	}
 
 	ast.Walk(program, Walk)
@@ -179,25 +190,6 @@ func ReadScript(parserInstance *Parser, start int) ScriptSource {
 			IsProperty: true,
 		})
 	}
-
-	// var usedVariables []ParsedVariable
-
-	/*for _, thisVariable := range thisVariables {
-		contains := false
-		for _, variable := range variables {
-			if variable.Name == thisVariable {
-				contains = true
-			}
-		}
-
-		if contains {
-			usedVariables = append(usedVariables, thisVariable)
-		}
-	}*/
-
-	/*for _, properties := range properties {
-		usedVariables = append(usedVariables, properties.Name)
-	}*/
 
 	end := parserInstance.Index
 	parserInstance.Index += 9
