@@ -2,6 +2,7 @@ package generator
 
 import (
 	"elljo/compiler/parser"
+	"elljo/compiler/utils"
 	"strconv"
 	"strings"
 	"unicode"
@@ -10,6 +11,76 @@ import (
 type ComponentProperties struct {
 	Index      int
 	Properties map[string]string
+}
+
+func (self *Generator) handleComponent(children parser.Entry, current *Fragment, isGlobalComponent bool, name string) {
+	componentProperties := ComponentProperties{
+		Index:      self.componentCounter,
+		Properties: map[string]string{},
+	}
+	self.componentCounter++
+
+	props := ""
+	events := ""
+
+	createTemplate := ""
+
+	for _, attribute := range children.Attributes {
+		if !attribute.IsEvent {
+			if props != "" {
+				props += ", '" + attribute.Name + "': " + attribute.Value
+			} else {
+				props += attribute.Name + ": " + attribute.Value
+			}
+			createTemplate += `
+					if(!this.$propsBindings["` + attribute.Name + `"]) {
+						this.$propsBindings["` + attribute.Name + `"] = [];							
+					}
+					this.$propsBindings["` + attribute.Name + `"].push('component-` + strconv.Itoa(componentProperties.Index) + `');
+`
+			componentProperties.Properties[attribute.Value] = attribute.Name
+		} else {
+			if attribute.IsCall {
+				events += "'" + attribute.Name + "': () => {" + attribute.Value + "},"
+			} else {
+				events += "'" + attribute.Name + "': " + attribute.Value + ","
+			}
+		}
+	}
+
+	self.componentProperties = append(self.componentProperties, componentProperties)
+
+	if isGlobalComponent {
+		createTemplate += `let $element_name$ = window.__elljo__.components["$name$"]
+								if(!$element_name$) {
+									//TODO: Log error and better error handling (only return this component)
+									return
+								}
+`
+	}
+
+	createTemplate += `this['component-` + strconv.Itoa(componentProperties.Index) +
+		`'] = new $element_name$({target: $target$}, {` + props + `}, {` + events + `});`
+	variables := map[string]string{
+		"name":         children.Name,
+		"target":       current.Target,
+		"props":        props,
+		"element_name": name,
+	}
+	initStatement := Statement{
+		source:   utils.BuildString(createTemplate, variables),
+		mappings: [][]int{},
+	}
+	current.InitStatements = append(current.InitStatements, initStatement)
+
+	removeStatementSource := "this['component-" + strconv.Itoa(componentProperties.Index) + "'].teardown();"
+
+	removeStatement := Statement{
+		source:   removeStatementSource,
+		mappings: [][]int{{}},
+	}
+
+	current.TeardownStatements = append(current.TeardownStatements, removeStatement)
 }
 
 func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry, current *Fragment) *Fragment {
@@ -22,157 +93,114 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 	for _, componentImport := range parser.ScriptSource.Imports {
 		if componentImport.Name == children.Name {
 			isComponent = true
+			name = componentImport.Name
 		}
 	}
+
 	if !isComponent {
 		if unicode.IsUpper(rune(children.Name[0])) {
 			isGlobalComponent = true
 		}
 	}
+
 	if isComponent || isGlobalComponent {
-		componentProperties := ComponentProperties{
-			Index:      self.componentCounter,
-			Properties: map[string]string{},
-		}
-		self.componentCounter++
-		props := ""
-		events := ""
-		for _, attribute := range children.Attributes {
-			if !attribute.IsEvent {
-				if props != "" {
-					props += ", '" + attribute.Name + "': " + attribute.Value
-				} else {
-					props += attribute.Name + ": " + attribute.Value
-				}
-				if !attribute.IsCall {
-					componentProperties.Properties[attribute.Value] = attribute.Name
-				}
-			} else {
-				if events != "" {
-					events += ", '" + attribute.Name + "': " + attribute.Value
-				} else {
-					events += "'" + attribute.Name + "': " + attribute.Value
+		self.handleComponent(children, current, isGlobalComponent, name)
+	} else {
+		var template strings.Builder
+
+		if len(children.LoopIndices) > 0 {
+
+			// Indicates whether the element has an expression, a call or an event as an attribute
+			hasRelevantAttribute := false
+			for _, attribute := range children.Attributes {
+				if attribute.IsExpression || attribute.IsEvent {
+					hasRelevantAttribute = true
 				}
 			}
-		}
-		self.componentProperties = append(self.componentProperties, componentProperties)
-		createTemplate := ""
-		if isGlobalComponent {
-			createTemplate += `let $element_name$ = window.__elljo__.components["$name$"]
-								if(!$element_name$) {
-									//TODO: Log error and better error handling (only return this component)
-									return
-								}
-`
-		}
-		createTemplate += `this['component-` + strconv.Itoa(componentProperties.Index) +
-			`'] = new $element_name$({target: $target$}, {` + props + `}, {` + events + `});`
-		variables := map[string]string{
-			"name":         children.Name,
-			"target":       current.Target,
-			"props":        props,
-			"element_name": name,
-		}
-		initStatement := Statement{
-			source:   self.BuildString(createTemplate, variables),
-			mappings: [][]int{},
-		}
-		current.InitStatements = append(current.InitStatements, initStatement)
 
-		removeStatementSource := "this['component-" + strconv.Itoa(componentProperties.Index) + "'].teardown();"
+			// If all attributes are static we can return everything
+			if !hasRelevantAttribute {
+				return &Fragment{
+					Target:             name,
+					TeardownStatements: current.TeardownStatements,
+					Name:               current.Name,
+					InitStatements:     current.InitStatements,
+					Counters:           current.Counters,
+					ContextChain:       current.ContextChain,
+					UpdateStatments:    current.UpdateStatments,
+					UseAnchor:          current.UseAnchor,
+					Parent:             current,
+					IsComponent:        isComponent || isGlobalComponent,
+					UpdateContextChain: current.UpdateContextChain,
+				}
+			}
 
-		removeStatement := Statement{
-			source:   removeStatementSource,
-			mappings: [][]int{{}},
-		}
+			template.WriteString("\nvar $name$ = $initHtml")
 
-		current.TeardownStatements = append(current.TeardownStatements, removeStatement)
-	} else {
-		template := ""
-		if children.Namespace == "" {
-			template += `
-				var $name$ = elementCache.$childrenName$.cloneNode(true);
-			`
+			for _, index := range children.LoopIndices {
+				template.WriteString(".childNodes[" + strconv.Itoa(index) + "]")
+			}
+
+			template.WriteString(";\n")
 		} else {
-			template += `
-				var $name$ = document.createElementNS("$childrenNamespace$", "$childrenName$");
-			`
+			if children.Namespace == "" {
+				template.WriteString("\nvar $name$ = elementCache.$childrenName$.cloneNode(true);\n")
+			} else {
+				template.WriteString("\nvar $name$ = document.createElementNS(\"$childrenNamespace$\", \"$childrenName$\");\n")
+			}
 		}
 
 		childrenName := strings.ReplaceAll(children.Name, "\n", "")
 		self.elements[childrenName] = struct{}{}
+
 		variables := map[string]string{
 			"name":              name,
 			"childrenName":      childrenName,
 			"childrenNamespace": children.Namespace,
 		}
-		createStatement := self.BuildString(template, variables)
+
+		createStatement := utils.BuildString(template.String(), variables)
 		mappings := [][]int{{}}
 
-		for attributeIndex, attribute := range children.Attributes {
+		for _, attribute := range children.Attributes {
 			if attribute.IsExpression {
-				if attribute.IsCall {
-					attributeCreateStatement := `var $name$_attr_$index$ = () => {
-						return $value$
-					};
-					$name$.$attributeName$ = $name$_attr_$index$();`
-
-					mappings = append(mappings, []int{}, []int{}, []int{}, []int{}, []int{})
-
-					variables := map[string]string{
-						"name":          name,
-						"index":         strconv.Itoa(attributeIndex),
-						"value":         attribute.Value,
-						"attributeName": attribute.Name,
-					}
-
-					createStatement += self.BuildString(attributeCreateStatement, variables)
-
-					attributeUpdateStatementSource := `$name$.setAttribute("$attributeName$", $name$_attr_$index$());`
-
-					attributeUpdateStatement := Statement{
-						source:   self.BuildString(attributeUpdateStatementSource, variables),
-						mappings: [][]int{},
-					}
-
-					current.UpdateStatments = append(current.UpdateStatments, attributeUpdateStatement)
-				} else {
-					variableCreateStatement := `$name$.setAttribute("$attributeName$", $value$);`
-					variables := map[string]string{
-						"name":          name,
-						"attributeName": attribute.Name,
-						"value":         attribute.Value,
-					}
-					mappings = append(mappings, []int{0, 0, children.Line, 0})
-					createStatement += self.BuildString(variableCreateStatement, variables)
-					variableUpdateStatementSource := `if(this.$value$IsDirty) {
+				variableCreateStatement := `$name$.setAttribute("$attributeName$", $value$);`
+				variables := map[string]string{
+					"name":          name,
+					"attributeName": attribute.Name,
+					"value":         attribute.Value,
+				}
+				mappings = append(mappings, []int{0, 0, children.Line, 0})
+				createStatement += utils.BuildString(variableCreateStatement, variables)
+				variableUpdateStatementSource := `if(this.$value$IsDirty) {
 								$name$.setAttribute("$attributeName$", $value$);
 							}`
 
-					variableUpdateStatement := Statement{
-						source:   self.BuildString(variableUpdateStatementSource, variables),
-						mappings: [][]int{{}, {0, 0, children.Line, 0}, {}},
-					}
-
-					current.UpdateStatments = append(current.UpdateStatments, variableUpdateStatement)
+				variableUpdateStatement := Statement{
+					source:   utils.BuildString(variableUpdateStatementSource, variables),
+					mappings: [][]int{{}, {0, 0, children.Line, 0}, {}},
 				}
+
+				current.UpdateStatments = append(current.UpdateStatments, variableUpdateStatement)
 
 			} else if attribute.IsEvent {
+				attributeCreateStatement := ""
+
 				if attribute.IsCall {
-					attributeCreateStatement := `$name$.addEventListener("$attributeName$", () => {
+					attributeCreateStatement = `$name$.addEventListener("$attributeName$", () => {
 						$value$
 					});`
-					mappings = append(mappings, []int{}, []int{}, []int{}, []int{})
-					variables := map[string]string{
-						"attributeName": attribute.Name,
-						"name":          name,
-						"value":         attribute.Value,
-					}
-					createStatement += self.BuildString(attributeCreateStatement, variables)
 				} else {
-					createStatement += name + `.addEventListener("` + attribute.Name + `", ` + attribute.Value + `);`
-					mappings = append(mappings, []int{})
+					attributeCreateStatement = `$name$.addEventListener("$attributeName$", $value$)`
 				}
+
+				mappings = append(mappings, []int{}, []int{}, []int{}, []int{})
+				variables := map[string]string{
+					"attributeName": attribute.Name,
+					"name":          name,
+					"value":         attribute.Value,
+				}
+				createStatement += utils.BuildString(attributeCreateStatement, variables)
 
 			} else {
 				if attribute.HasValue {
@@ -197,7 +225,7 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 				"name": name,
 			}
 			current.InitStatements = append(current.InitStatements, Statement{
-				source:   self.BuildString(scopeStatement, variables),
+				source:   utils.BuildString(scopeStatement, variables),
 				mappings: mappings,
 			})
 		}
@@ -212,6 +240,8 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 		current.TeardownStatements = append(current.TeardownStatements, removeStatement)
 	}
 
+	needsAppend := !(len(children.LoopIndices) > 0)
+
 	return &Fragment{
 		Target:             name,
 		TeardownStatements: current.TeardownStatements,
@@ -224,18 +254,20 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 		Parent:             current,
 		IsComponent:        isComponent || isGlobalComponent,
 		UpdateContextChain: current.UpdateContextChain,
+		NeedsAppend:        needsAppend,
 	}
 }
 
 func (self *Generator) VisitElementAfter(current *Fragment) {
 	name := current.Target
+	needsAppend := current.NeedsAppend
 	isComponent := current.IsComponent
 	current.Parent.InitStatements = current.InitStatements
 	current.Parent.UpdateStatments = current.UpdateStatments
 	current.Parent.Counters = current.Counters
 	current = current.Parent
 
-	if !isComponent {
+	if !isComponent && needsAppend {
 		if current.UseAnchor && current.Target == "target" {
 			initStatement := Statement{
 				source:   "target.insertBefore(" + name + ", anchor);",

@@ -1,19 +1,11 @@
 package parser
 
 import (
-	"elljo/compiler/js-parser/ast"
 	"elljo/compiler/utils"
+	"github.com/JonasNiestroj/esbuild-internal/js_ast"
 	"regexp"
 	"strings"
 )
-
-type Chunk struct {
-	Start      int
-	End        int
-	Type       string
-	Data       string
-	Expression *ast.Program
-}
 
 type Attribute struct {
 	Name         string
@@ -21,7 +13,7 @@ type Attribute struct {
 	HasValue     bool
 	IsExpression bool
 	IsEvent      bool
-	Expression   *ast.Program
+	Expression   js_ast.AST
 	IsCall       bool
 }
 
@@ -54,6 +46,19 @@ func ReadAttributeValue(parser *Parser) string {
 	return ""
 }
 
+func isExpressionACall(ast js_ast.AST) bool {
+	for _, part := range ast.Parts {
+		for _, stmt := range part.Stmts {
+			if id, ok := stmt.Data.(*js_ast.SExpr); ok && id != nil {
+				if _, ok := id.Value.Data.(*js_ast.ECall); ok {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
 func ReadAttributes(parser *Parser, entry *Entry) []Attribute {
 	pattern, _ := regexp.Compile(`(/>|=|>|\s)`)
 	var attributes []Attribute
@@ -83,22 +88,14 @@ func ReadAttributes(parser *Parser, entry *Entry) []Attribute {
 			if isEvent {
 				expression := ReadExpression(value)
 
-				isCall := false
-				if id, ok := expression.Body[0].(*ast.ExpressionStatement); ok && id != nil {
-					if expression, ok := id.Expression.(*ast.CallExpression); ok && expression != nil {
-						isCall = true
-					}
-				}
+				isCall := isExpressionACall(expression)
+
 				attributes = append(attributes, Attribute{Name: name, HasValue: true, Value: value, IsEvent: true, Expression: expression, IsCall: isCall})
 			} else if isExpression {
 				expression := ReadExpression(value)
 
-				isCall := false
-				if id, ok := expression.Body[0].(*ast.ExpressionStatement); ok && id != nil {
-					if expression, ok := id.Expression.(*ast.CallExpression); ok && expression != nil {
-						isCall = true
-					}
-				}
+				isCall := isExpressionACall(expression)
+
 				attributes = append(attributes, Attribute{Name: name, HasValue: true, Value: value, IsExpression: true, Expression: expression, IsCall: isCall})
 			} else {
 				attributes = append(attributes, Attribute{Name: name, HasValue: true, Value: `"` + value + `"`, IsEvent: isEvent})

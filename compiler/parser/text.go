@@ -24,7 +24,8 @@ func Text(parser *Parser) {
 		parser.Index++
 	}
 
-	if data == "\n" || []byte(data)[0] == 10 {
+	if len(data) == 0 || data == "\n" || []byte(data)[0] == 10 {
+
 		return
 	}
 

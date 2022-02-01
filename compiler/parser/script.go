@@ -1,9 +1,11 @@
 package parser
 
 import (
-	"elljo/compiler/js-parser/ast"
-	"elljo/compiler/js-parser/parser"
 	"elljo/compiler/utils"
+	"github.com/JonasNiestroj/esbuild-internal/config"
+	"github.com/JonasNiestroj/esbuild-internal/js_ast"
+	"github.com/JonasNiestroj/esbuild-internal/js_parser"
+	"github.com/JonasNiestroj/esbuild-internal/logger"
 	"regexp"
 	"strings"
 )
@@ -15,14 +17,13 @@ type Import struct {
 }
 
 type Property struct {
-	ExportStatement *ast.ExportStatement
+	ExportStatement js_ast.NamedExport
 	Name            string
 }
 
 type Variable struct {
-	Name        string
-	Initializer ast.Expression
-	IsProperty  bool
+	Name       string
+	IsProperty bool
 }
 
 type ParsedVariable struct {
@@ -33,79 +34,33 @@ type ParsedVariable struct {
 
 type Assign struct {
 	Name       string
-	Expression *ast.AssignExpression
+	Expression *js_ast.EBinary
 }
 
 var (
-	variables     []Variable
-	thisVariables []string
-	imports       []*ast.ImportStatement
-	dotExpression *ast.DotExpression
-	properties    []Property
-	assigns       []Assign
+	variables  []Variable
+	imports    []*js_ast.SImport
+	properties []Property
+	assigns    []Assign
+	symbols    js_ast.SymbolMap
+	astTree    js_ast.AST
 )
 
-func Walk(node ast.Node) {
-	if id, ok := node.(*ast.ImportStatement); ok && id != nil {
-		imports = append(imports, id)
-	}
-	if id, ok := node.(*ast.ThisExpression); ok && id != nil {
-		if dotExpression != nil {
-			thisVariables = append(thisVariables, dotExpression.Identifier.Name.String())
-		}
-	}
-
-	dotExpression = nil
-	if id, ok := node.(*ast.DotExpression); ok && id != nil {
-		for _, variable := range thisVariables {
-			if variable == id.Identifier.Name.String() {
-				return
-			}
-		}
-		dotExpression = id
-	}
-
-	if id, ok := node.(*ast.VariableStatement); ok && id != nil {
-		for _, variable := range id.List {
-			if id, ok := variable.(*ast.VariableExpression); ok && id != nil {
-				variables = append(variables, Variable{
-					Name:        id.Name.String(),
-					Initializer: id.Initializer,
-				})
-			}
-		}
-	}
-
-	if expression, ok := node.(*ast.ExportStatement); ok && expression != nil {
-		if id, ok := expression.Statement.(*ast.VariableStatement); ok && id != nil {
-			for _, variable := range id.List {
-				if id, ok := variable.(*ast.VariableExpression); ok && id != nil {
-					properties = append(properties, Property{
-						ExportStatement: expression,
-						Name:            id.Name.String(),
-					})
-				}
-			}
-		}
-	}
-
-	if expression, ok := node.(*ast.AssignExpression); ok && expression != nil {
-		if left, ok := expression.Left.(*ast.Identifier); ok && left != nil {
-			if variablesContains(left.Name.String()) {
+func WalkFunc(entry interface{}) {
+	if expr, ok := entry.(*js_ast.EBinary); ok && expr != nil {
+		if left, ok := expr.Left.Data.(*js_ast.EIdentifier); ok && left != nil {
+			variableName := symbols.Get(left.Ref).OriginalName
+			if variablesContains(variableName) {
 				assigns = append(assigns, Assign{
-					Name:       left.Name.String(),
-					Expression: expression,
+					Name:       variableName,
+					Expression: expr,
 				})
 			}
 		}
-		if left, ok := expression.Left.(*ast.DotExpression); ok && left != nil {
-			if variablesContains(left.Identifier.Name.String()) {
-				assigns = append(assigns, Assign{
-					Name:       left.Identifier.Name.String(),
-					Expression: expression,
-				})
-			}
-		}
+	}
+
+	if imp, ok := entry.(*js_ast.SImport); ok && imp != nil {
+		imports = append(imports, imp)
 	}
 }
 
@@ -125,21 +80,59 @@ func ReadScript(parserInstance *Parser, start int) ScriptSource {
 
 	source := parserInstance.Template[scriptStart:parserInstance.Index]
 
-	jsParserInstance := parser.NewParser(source, 0)
+	log := logger.NewDeferLog(logger.DeferLogAll)
 
-	program, err := jsParserInstance.Parse()
+	src := logger.Source{Index: 0, Contents: source}
 
-	if err != nil {
-		panic(err)
+	success := false
+
+	astTree, success = js_parser.Parse(log, src, js_parser.OptionsFromConfig(&config.Options{WriteToStdout: false}))
+
+	if !success {
+		msgs := log.Done()
+
+		var errors []utils.Error
+
+		for _, msg := range msgs {
+			err := utils.Error{
+				Line:        msg.Data.Location.Line,
+				Message:     msg.Data.Text,
+				StartColumn: msg.Data.Location.Column,
+				EndColumn:   msg.Data.Location.Column + msg.Data.Location.Length,
+			}
+
+			errors = append(errors, err)
+		}
+
+		parserInstance.Errors = append(parserInstance.Errors, errors...)
+
+		return ScriptSource{}
 	}
 
-	ast.Walk(program, Walk)
+	symbols = js_ast.NewSymbolMap(1)
+	symbols.SymbolsForSource[0] = astTree.Symbols
 
-	for _, declaration := range program.DeclarationList {
-
-		if id, ok := declaration.(*ast.FunctionDeclaration); ok && id != nil {
-			ast.Walk(id.Function, Walk)
+	for _, part := range astTree.Parts {
+		for _, symbol := range part.DeclaredSymbols {
+			if symbol.IsTopLevel {
+				if symbols.Get(symbol.Ref).Kind != js_ast.SymbolImport {
+					variables = append(variables, Variable{
+						Name: symbols.Get(symbol.Ref).OriginalName,
+					})
+				}
+			}
 		}
+		for _, stmt := range part.Stmts {
+			Walk(stmt.Data, WalkFunc)
+		}
+	}
+
+	// Get exports for properties
+	for key, value := range astTree.NamedExports {
+		properties = append(properties, Property{
+			ExportStatement: value,
+			Name:            key,
+		})
 	}
 
 	stringReplacer := &utils.StringReplacer{
@@ -149,55 +142,65 @@ func ReadScript(parserInstance *Parser, start int) ScriptSource {
 	var importNames []Import
 
 	for _, importStatement := range imports {
+		index0 := astTree.NamedImports[importStatement.NamespaceRef].AliasLoc.Start
+		index1 := astTree.ImportRecords[importStatement.ImportRecordIndex].Range.End()
+
+		importFile := astTree.ImportRecords[importStatement.ImportRecordIndex].Path.Text
+
+		name := ""
+
+		if importStatement.DefaultName != nil {
+			name = symbols.Get(importStatement.DefaultName.Ref).OriginalName
+		}
+
 		isElljoFile := false
 		// TODO: Improve .jo check
-		if !strings.HasSuffix(importStatement.Source, ".jo'") && !strings.HasSuffix(importStatement.Source, ".jo\"") {
+		if !strings.HasSuffix(importFile, ".jo'") && !strings.HasSuffix(importFile, ".jo\"") {
 			isElljoFile = true
 		}
+
 		importVar := Import{
-			Source:  source[importStatement.Index0():importStatement.Index1()],
-			Name:    importStatement.Name,
+			Source:  source[index0:index1],
+			Name:    name,
 			IsEllJo: isElljoFile,
 		}
-		stringReplacer.Replace(importStatement.Index0(), importStatement.Index1(), "")
+
 		importNames = append(importNames, importVar)
+
+		stringReplacer.Replace(int(index0), int(index1), "")
 	}
 
 	for _, assign := range assigns {
-		assignSource := source[assign.Expression.Index0():assign.Expression.Index1()]
-		newAssignSource := "this.oldState." + assign.Name + " = " + assign.Name + "; this.updateValue('" + assign.Name + "', " + assignSource + ");"
-		stringReplacer.Replace(assign.Expression.Index0(), assign.Expression.Index1(), newAssignSource)
+		if left, ok := assign.Expression.Left.Data.(*js_ast.EIdentifier); ok && left != nil {
+			endNewLine := src.RangeOfOperatorAfter(assign.Expression.Right.Loc, "\n")
+			endSemicolon := src.RangeOfOperatorAfter(assign.Expression.Right.Loc, ";")
+
+			var end logger.Range
+
+			if endNewLine.End() < endSemicolon.End() {
+				end = endNewLine
+			} else {
+				end = endSemicolon
+			}
+
+			index0 := int(assign.Expression.Left.Loc.Start)
+			index1 := int(end.End() - 1)
+
+			assignSource := source[index0:index1]
+			newAssignSource := "this.oldState." + assign.Name + " = " + assign.Name + "; this.updateValue('" + assign.Name + "', " + assignSource + ");"
+
+			stringReplacer.Replace(index0, index1, newAssignSource)
+		}
 	}
 
 	var propertyNames []string
 	for _, export := range properties {
-		exportStatement := export.ExportStatement
-		stringReplacer.Replace(exportStatement.Export, exportStatement.Statement.Index0(), "")
+		index0 := int(astTree.ExportKeyword.Loc.Start)
+		index1 := int(astTree.ExportKeyword.End())
+
+		stringReplacer.Replace(index0, index1, "")
 		propertyNames = append(propertyNames, export.Name)
-		variables = append(variables, Variable{
-			Name:       export.Name,
-			IsProperty: true,
-		})
 	}
-
-	// var usedVariables []ParsedVariable
-
-	/*for _, thisVariable := range thisVariables {
-		contains := false
-		for _, variable := range variables {
-			if variable.Name == thisVariable {
-				contains = true
-			}
-		}
-
-		if contains {
-			usedVariables = append(usedVariables, thisVariable)
-		}
-	}*/
-
-	/*for _, properties := range properties {
-		usedVariables = append(usedVariables, properties.Name)
-	}*/
 
 	end := parserInstance.Index
 	parserInstance.Index += 9
@@ -205,7 +208,6 @@ func ReadScript(parserInstance *Parser, start int) ScriptSource {
 	return ScriptSource{
 		StartIndex:     start,
 		EndIndex:       end,
-		Program:        program,
 		Variables:      variables,
 		Imports:        importNames,
 		Source:         source,

@@ -1,14 +1,9 @@
 package parser
 
-type Error struct {
-	Line        int    `json:"line"`
-	Message     string `json:"message"`
-	StartColumn int    `json:"startColumn"`
-	EndColumn   int    `json:"endColumn"`
-}
+import "elljo/compiler/utils"
 
 func (self *Parser) Error(errorMessage string) {
-	self.Errors = append(self.Errors, Error{
+	self.Errors = append(self.Errors, utils.Error{
 		Message:     errorMessage,
 		Line:        self.currentLine + 1,
 		StartColumn: self.PossibleErrorIndex - self.lineStartIndex,

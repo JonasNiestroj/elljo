@@ -1,8 +1,8 @@
 package generator
 
 import (
-	"elljo/compiler/js-parser/ast"
 	"elljo/compiler/parser"
+	"elljo/compiler/utils"
 	"strconv"
 )
 
@@ -30,12 +30,8 @@ func (self *Generator) VisitIf(children parser.Entry, current *Fragment) *Fragme
 			elseIfName := "elseIfBlock_" + strconv.Itoa(self.elseIfCounter+index)
 			elseIfRenderer := "renderElseIfBlock_" + strconv.Itoa(self.elseIfCounter+index)
 			elseIfBlock := ElseIfBlock{entry: child, name: elseIfName, renderer: elseIfRenderer}
-			for _, declaration := range child.Expression.Body {
-				if id, ok := declaration.(*ast.ExpressionStatement); ok && id != nil {
-					variableName := child.ExpressionSource[id.Index0():id.Index1()]
-					elseIfBlock.variable = variableName
-				}
-			}
+
+			elseIfBlock.variable = "(" + child.ExpressionSource + ")"
 			elseIfs = append(elseIfs, elseIfBlock)
 		}
 	}
@@ -74,7 +70,7 @@ func (self *Generator) VisitIf(children parser.Entry, current *Fragment) *Fragme
 	}
 
 	createStatement := Statement{
-		source:   self.BuildString(template, variables),
+		source:   utils.BuildString(template, variables),
 		mappings: [][]int{{}, {}, {}},
 	}
 
@@ -98,75 +94,73 @@ func (self *Generator) VisitIf(children parser.Entry, current *Fragment) *Fragme
 	}
 
 	current.TeardownStatements = append(current.TeardownStatements, teardownStatement)
-	for _, declaration := range children.Expression.Body {
-		if id, ok := declaration.(*ast.ExpressionStatement); ok && id != nil {
-			variableName := children.ExpressionSource[id.Index0():id.Index1()]
-			updateStatementTemplate := `if($variableName$){
+
+	updateStatementTemplate := `if($variableName$){
 				if(!$name$) $name$ = $renderer$($target$, $name$_anchor);
 			`
 
-			if hasElse && len(elseIfs) == 0 {
-				updateStatementTemplate += `
+	if hasElse && len(elseIfs) == 0 {
+		updateStatementTemplate += `
 						$name$.update();
 						if($elseName$) { 
 							$elseName$.teardown();
 							$elseName$ = null;
 						}
 					}`
-			}
+	}
 
-			if len(elseIfs) > 0 {
-				for _, elseIf := range elseIfs {
-					name := elseIf.name
+	if len(elseIfs) > 0 {
+		for _, elseIf := range elseIfs {
+			name := elseIf.name
+			updateStatementTemplate += `if(` + name + `) {
+									` + name + `.teardown();
+									` + name + ` = null;
+								}
+`
+		}
+		if hasElse {
+			updateStatementTemplate += `
+						if($elseName$) { 
+							$elseName$.teardown();
+							$elseName$ = null;
+						}`
+		}
+		updateStatementTemplate += `
+					}`
+		for _, elseIf := range elseIfs {
+			updateStatementTemplate += `
+						else if(` + elseIf.variable + `) {
+							if(!` + elseIf.name + `) ` + elseIf.name + ` = ` + elseIf.renderer + `($target$, ` + elseIf.name + `_anchor);
+						`
+			for _, elseIfInner := range elseIfs {
+				if elseIfInner != elseIf {
+					name := elseIfInner.name
 					updateStatementTemplate += `if(` + name + `) {
 									` + name + `.teardown();
 									` + name + ` = null;
 								}
 `
 				}
-				if hasElse {
-					updateStatementTemplate += `
-						if($elseName$) { 
-							$elseName$.teardown();
-							$elseName$ = null;
-						}`
-				}
+			}
+			if hasElse {
 				updateStatementTemplate += `
-					}`
-				for _, elseIf := range elseIfs {
-					updateStatementTemplate += `
-						else if(` + elseIf.variable + `) {
-							if(!` + elseIf.name + `) ` + elseIf.name + ` = ` + elseIf.renderer + `($target$, ` + elseIf.name + `_anchor);
-						`
-					for _, elseIfInner := range elseIfs {
-						if elseIfInner != elseIf {
-							name := elseIfInner.name
-							updateStatementTemplate += `if(` + name + `) {
-									` + name + `.teardown();
-									` + name + ` = null;
-								}
-`
-						}
-					}
-					if hasElse {
-						updateStatementTemplate += `
 								if($elseName$) { 
 									$elseName$.teardown();
 									$elseName$ = null;
 								}`
-					}
-					updateStatementTemplate += `
+			}
+			updateStatementTemplate += `
 						if($name$) {
 							$name$.teardown();
 							$name$ = null;
 						}
 					` + elseIf.name + `.update();
 					}`
-				}
-			}
+		}
+	}
 
-			if hasElse {
-				updateStatementTemplate += `
+	if hasElse {
+		updateStatementTemplate += `
 					else {
 						if(!$elseName$) $elseName$ = $elseRenderer$($target$, $elseName$_anchor);
 						if($name$) {
@@ -175,31 +169,29 @@ func (self *Generator) VisitIf(children parser.Entry, current *Fragment) *Fragme
 						}
 						$elseName$.update();
 					}`
-			} else if len(elseIfs) == 0 {
-				updateStatementTemplate += `
+	} else if len(elseIfs) == 0 {
+		updateStatementTemplate += `
 				} else if(!$variableName$ && $name$){
 					$name$.teardown();
 					$name$ = null;
 				}`
-			}
-
-			variables := map[string]string{
-				"variableName": variableName,
-				"name":         name,
-				"renderer":     renderer,
-				"target":       current.Target,
-				"elseName":     elseName,
-				"elseRenderer": elseRenderer,
-			}
-
-			updateStatement := Statement{
-				source:   self.BuildString(updateStatementTemplate, variables),
-				mappings: [][]int{{0, 0, children.Line, 0}, {}, {}, {}, {}, {}, {}, {}, {}},
-			}
-
-			current.UpdateStatments = append(current.UpdateStatments, updateStatement)
-		}
 	}
+
+	variables = map[string]string{
+		"variableName": children.ExpressionSource,
+		"name":         name,
+		"renderer":     renderer,
+		"target":       current.Target,
+		"elseName":     elseName,
+		"elseRenderer": elseRenderer,
+	}
+
+	updateStatement := Statement{
+		source:   utils.BuildString(updateStatementTemplate, variables),
+		mappings: [][]int{{0, 0, children.Line, 0}, {}, {}, {}, {}, {}, {}, {}, {}},
+	}
+
+	current.UpdateStatments = append(current.UpdateStatments, updateStatement)
 
 	return &Fragment{
 		UseAnchor:          true,

@@ -1,15 +1,18 @@
 package parser
 
 import (
-	"elljo/compiler/js-parser/ast"
-	"elljo/compiler/js-parser/parser"
+	"github.com/JonasNiestroj/esbuild-internal/config"
+	"github.com/JonasNiestroj/esbuild-internal/js_ast"
+	"github.com/JonasNiestroj/esbuild-internal/js_parser"
+	"github.com/JonasNiestroj/esbuild-internal/logger"
 )
 
-func ReadExpression(src string) *ast.Program {
-	parserInstance := parser.NewParser(src, 0)
-	program, err := parserInstance.Parse()
-	if err != nil {
-		panic(err)
-	}
-	return program
+func ReadExpression(src string) js_ast.AST {
+	log := logger.NewDeferLog(logger.DeferLogAll)
+
+	source := logger.Source{Index: 0, Contents: src}
+
+	astTree, _ := js_parser.Parse(log, source, js_parser.OptionsFromConfig(&config.Options{WriteToStdout: false}))
+
+	return astTree
 }

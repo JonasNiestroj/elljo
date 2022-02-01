@@ -1,2 +1,4 @@
-rogchap.com/v8go v0.6.0 h1:wNn5Iu06+ke7HM511zXTVBBpRNYaauyZoPMTrLsGurU=
-rogchap.com/v8go v0.6.0/go.mod h1:IitZnaOtWSJadY/7qinKHIEHpxsilMWyLQ+Efdo4n4I=
+github.com/JonasNiestroj/esbuild-internal v0.14.14 h1:SBUsvprHYNlUHkasel8Tm9WpzCWAWKNJsnS5X1ATH+8=
+github.com/JonasNiestroj/esbuild-internal v0.14.14/go.mod h1:w+BfkFYDFnC6UocGwX4PcKz+DpWI8KPfBt5ofO9s5xc=
+golang.org/x/sys v0.0.0-20210908233432-aa78b53d3365 h1:6wSTsvPddg9gc/mVEEyk9oOAoxn+bT4Z9q1zx+4RwA4=
+golang.org/x/sys v0.0.0-20210908233432-aa78b53d3365/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=

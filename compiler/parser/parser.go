@@ -1,8 +1,8 @@
 package parser
 
 import (
-	"elljo/compiler/js-parser/ast"
 	"elljo/compiler/utils"
+	"github.com/JonasNiestroj/esbuild-internal/js_ast"
 	"regexp"
 )
 
@@ -13,7 +13,7 @@ type Entry struct {
 	Children         []*Entry
 	Name             string
 	Data             string
-	Expression       *ast.Program
+	Expression       js_ast.AST
 	ExpressionSource string
 	Context          string
 	Attributes       []Attribute
@@ -22,12 +22,12 @@ type Entry struct {
 	ElseIfs          []*Entry
 	Else             *Entry
 	Namespace        string
+	LoopIndices      []int
 }
 
 type ScriptSource struct {
 	StartIndex     int
 	EndIndex       int
-	Program        *ast.Program
 	Variables      []Variable
 	Imports        []Import
 	Source         string
@@ -51,7 +51,7 @@ type Parser struct {
 	ScriptSource       ScriptSource
 	StyleSource        StyleSource
 	currentLine        int
-	Errors             []Error
+	Errors             []utils.Error
 	PossibleErrorIndex int
 	lineStartIndex     int
 }
@@ -129,6 +129,11 @@ func (self *Parser) ReadWhitespace() {
 		self.currentLine += newLines
 		self.lineStartIndex = self.Index
 	}
+}
+
+func (self *Parser) IsWhitespace() bool {
+	var match, _ = regexp.MatchString(`\s`, string(self.Template[self.Index]))
+	return match
 }
 
 func (self *Parser) ReadUntil(pattern *regexp.Regexp) string {
