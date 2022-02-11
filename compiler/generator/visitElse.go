@@ -16,7 +16,7 @@ func (self *Generator) VisitElse(children parser.Entry, current *Fragment) *Frag
 		InitStatements:     []Statement{},
 		UpdateStatments:    []Statement{},
 		TeardownStatements: []Statement{},
-		Counters: FragmentCounter{
+		Counters: &FragmentCounter{
 			Text:    0,
 			Anchor:  0,
 			Element: 0,

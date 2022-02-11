@@ -10,8 +10,14 @@ export default class EllJoComponent {
     this.$props = {};
     this.$propsBindings = {};
     this.$events = {};
+    this.$slots = {};
     this.oldState = {};
     this.updating = false;
+
+    if (options.slots) {
+      this.$slots = options.slots
+    }
+
     setComponent(this);
 
     if (events) {

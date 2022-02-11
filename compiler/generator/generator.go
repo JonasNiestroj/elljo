@@ -11,6 +11,12 @@ type FragmentCounter struct {
 	Element int
 	Text    int
 	Anchor  int
+	Slot    int
+}
+
+type SlotEntry struct {
+	Slot     string
+	Renderer string
 }
 
 type Fragment struct {
@@ -21,13 +27,15 @@ type Fragment struct {
 	TeardownStatements []Statement
 	ContextChain       []string
 	Target             string
-	Counters           FragmentCounter
+	Counters           *FragmentCounter
 	Parent             *Fragment
 	IsComponent        bool
 	HasContext         bool
 	Mappings           [][]int
 	UpdateContextChain string
 	NeedsAppend        bool
+	SlotElements       []string
+	Slots              []SlotEntry
 }
 
 type Statement struct {
@@ -71,6 +79,10 @@ func (self *Generator) Visit(parser parser.Parser, children parser.Entry, curren
 		current = self.VisitElse(children, current)
 	case "ElseIfBlock":
 		current = self.VisitElseIf(children, current)
+	case "SlotElement":
+		current = self.VisitSlotElement(children, current)
+	case "SlotBlock":
+		current = self.VisitSlot(children, current)
 	}
 
 	if len(children.Children) > 0 {
@@ -81,7 +93,7 @@ func (self *Generator) Visit(parser parser.Parser, children parser.Entry, curren
 
 	switch children.EntryType {
 	case "Element":
-		self.VisitElementAfter(current)
+		self.VisitElementAfter(parser, current, children)
 	case "IfBlock":
 		self.VisitIfAfter(current)
 	case "Loop":
@@ -90,6 +102,8 @@ func (self *Generator) Visit(parser parser.Parser, children parser.Entry, curren
 		self.VisitElseAfter(current)
 	case "ElseIfBlock":
 		self.VisitElseIfAfter(current)
+	case "SlotBlock":
+		self.VisitSlotAfter(children, current)
 	}
 }
 
@@ -149,6 +163,7 @@ func (self *Generator) Generate(parser parser.Parser, template string) Generator
 		UpdateStatments:    []Statement{},
 		TeardownStatements: []Statement{},
 		ContextChain:       []string{"context", "dirtyInState", "oldState"},
+		Counters:           &FragmentCounter{Element: 0, Anchor: 0, Slot: 0, Text: 0},
 	}
 
 	js := parser.ScriptSource.StringReplacer.String()

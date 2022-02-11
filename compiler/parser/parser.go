@@ -7,22 +7,22 @@ import (
 )
 
 type Entry struct {
-	StartIndex       int
-	EndIndex         int
-	EntryType        string
-	Children         []*Entry
-	Name             string
-	Data             string
-	Expression       js_ast.AST
-	ExpressionSource string
-	Context          string
-	Attributes       []Attribute
-	Line             int
-	HasElse          bool
-	ElseIfs          []*Entry
-	Else             *Entry
-	Namespace        string
-	LoopIndices      []int
+	StartIndex  int
+	EndIndex    int
+	EntryType   string
+	Children    []*Entry
+	Name        string
+	Data        string
+	Expression  js_ast.AST
+	Parameter   string
+	Context     string
+	Attributes  []Attribute
+	Line        int
+	HasElse     bool
+	ElseIfs     []*Entry
+	Else        *Entry
+	Namespace   string
+	LoopIndices []int
 }
 
 type ScriptSource struct {

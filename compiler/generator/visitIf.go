@@ -31,7 +31,7 @@ func (self *Generator) VisitIf(children parser.Entry, current *Fragment) *Fragme
 			elseIfRenderer := "renderElseIfBlock_" + strconv.Itoa(self.elseIfCounter+index)
 			elseIfBlock := ElseIfBlock{entry: child, name: elseIfName, renderer: elseIfRenderer}
 
-			elseIfBlock.variable = "(" + child.ExpressionSource + ")"
+			elseIfBlock.variable = "(" + child.Parameter + ")"
 			elseIfs = append(elseIfs, elseIfBlock)
 		}
 	}
@@ -64,7 +64,7 @@ func (self *Generator) VisitIf(children parser.Entry, current *Fragment) *Fragme
 
 	variables := map[string]string{
 		"name":       name,
-		"expression": children.ExpressionSource,
+		"expression": children.Parameter,
 		"target":     current.Target,
 		"elseName":   elseName,
 	}
@@ -178,7 +178,7 @@ func (self *Generator) VisitIf(children parser.Entry, current *Fragment) *Fragme
 	}
 
 	variables = map[string]string{
-		"variableName": children.ExpressionSource,
+		"variableName": children.Parameter,
 		"name":         name,
 		"renderer":     renderer,
 		"target":       current.Target,
@@ -201,7 +201,7 @@ func (self *Generator) VisitIf(children parser.Entry, current *Fragment) *Fragme
 		InitStatements:     []Statement{},
 		UpdateStatments:    []Statement{},
 		TeardownStatements: []Statement{},
-		Counters: FragmentCounter{
+		Counters: &FragmentCounter{
 			Text:    0,
 			Anchor:  0,
 			Element: 0,

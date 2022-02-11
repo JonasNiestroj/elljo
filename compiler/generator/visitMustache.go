@@ -36,7 +36,7 @@ func (self *Generator) VisitMustache(parserInstance parser.Parser, children pars
 
 	current.InitStatements = append(current.InitStatements, createStatement)
 
-	variable := children.ExpressionSource
+	variable := children.Parameter
 
 	var updateStatementTemplate string
 	if current.UpdateContextChain != "" {

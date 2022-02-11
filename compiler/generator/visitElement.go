@@ -60,10 +60,16 @@ func (self *Generator) handleComponent(children parser.Entry, current *Fragment,
 	}
 
 	createTemplate += `this['component-` + strconv.Itoa(componentProperties.Index) +
-		`'] = new $element_name$({target: $target$}, {` + props + `}, {` + events + `});`
+		`'] = new $element_name$({target: $target$`
+
+	if len(current.SlotElements) > 0 || len(current.Slots) > 0 {
+		createTemplate += ", slots"
+	}
+
+	createTemplate += `}, {` + props + `}, {` + events + `});`
 	variables := map[string]string{
 		"name":         children.Name,
-		"target":       current.Target,
+		"target":       current.Parent.Target,
 		"props":        props,
 		"element_name": name,
 	}
@@ -88,6 +94,10 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 	current.Counters.Element++
 	name := "element_" + strconv.Itoa(current.Counters.Element)
 
+	if current.IsComponent {
+		current.SlotElements = append(current.SlotElements, name)
+	}
+
 	isComponent := false
 	isGlobalComponent := false
 	for _, componentImport := range parser.ScriptSource.Imports {
@@ -103,9 +113,7 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 		}
 	}
 
-	if isComponent || isGlobalComponent {
-		self.handleComponent(children, current, isGlobalComponent, name)
-	} else {
+	if !isComponent && !isGlobalComponent {
 		var template strings.Builder
 
 		if len(children.LoopIndices) > 0 {
@@ -255,19 +263,53 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 		IsComponent:        isComponent || isGlobalComponent,
 		UpdateContextChain: current.UpdateContextChain,
 		NeedsAppend:        needsAppend,
+		SlotElements:       []string{},
 	}
 }
 
-func (self *Generator) VisitElementAfter(current *Fragment) {
+func (self *Generator) VisitElementAfter(parser parser.Parser, current *Fragment, children parser.Entry) {
 	name := current.Target
 	needsAppend := current.NeedsAppend
 	isComponent := current.IsComponent
+
+	if len(current.SlotElements) > 0 {
+		self.VisitSlotAfter(children, current)
+	}
+
+	if len(current.Slots) > 0 {
+		initStatementSource := "var slots = {"
+
+		for _, slot := range current.Slots {
+			initStatementSource += slot.Slot + ": " + slot.Renderer + ","
+		}
+
+		initStatementSource += "};"
+
+		initStatement := Statement{
+			source: initStatementSource,
+			// TODO: Fix source map
+			mappings: [][]int{{}},
+		}
+		current.InitStatements = append(current.InitStatements, initStatement)
+	}
+
+	if isComponent {
+		isGlobalComponent := true
+		for _, componentImport := range parser.ScriptSource.Imports {
+			if componentImport.Name == children.Name {
+				isGlobalComponent = false
+			}
+		}
+
+		self.handleComponent(children, current, isGlobalComponent, name)
+	}
+
 	current.Parent.InitStatements = current.InitStatements
 	current.Parent.UpdateStatments = current.UpdateStatments
 	current.Parent.Counters = current.Counters
 	current = current.Parent
 
-	if !isComponent && needsAppend {
+	if !isComponent && needsAppend && !current.IsComponent {
 		if current.UseAnchor && current.Target == "target" {
 			initStatement := Statement{
 				source:   "target.insertBefore(" + name + ", anchor);",

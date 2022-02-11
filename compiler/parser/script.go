@@ -74,7 +74,7 @@ func variablesContains(name string) bool {
 }
 
 func ReadScript(parserInstance *Parser, start int) ScriptSource {
-	scriptStartLine := parserInstance.currentLine
+
 	scriptStart := parserInstance.Index
 	pattern, _ := regexp.Compile("</script>")
 	parserInstance.ReadUntil(pattern)

@@ -25,13 +25,18 @@ func Mustache(parser *Parser) {
 			expected = "if"
 		} else if current.EntryType == "Loop" {
 			expected = "loop"
+		} else if current.EntryType == "SlotBlock" {
+			expected = "slot"
 		}
 
 		read := parser.ReadRequired(expected)
+
 		if read {
 			parser.ReadWithWhitespaceRequired("}}")
 		}
-
+		if len(current.Children) == 0 {
+			return
+		}
 		firstChild := current.Children[0]
 		lastChild := current.Children[len(current.Children)-1]
 
@@ -78,17 +83,20 @@ func Mustache(parser *Parser) {
 		} else if parser.Read("elif") {
 			expressionType = "ElseIfBlock"
 			startIndex += 4
+		} else if parser.Read("slot") {
+			expressionType = "SlotBlock"
+			startIndex += 4
 		}
 
 		parser.ReadWhitespace()
 
 		context := ""
 
-		expressionSource := ""
+		parameter := ""
 		if expressionType == "Loop" {
 			parser.ReadWhitespace()
 			pattern, _ := regexp.Compile(` as`)
-			expressionSource = parser.ReadUntil(pattern)
+			parameter = parser.ReadUntil(pattern)
 			parser.ReadWithWhitespaceRequired("as")
 			parser.ReadWhitespace()
 
@@ -115,25 +123,25 @@ func Mustache(parser *Parser) {
 
 			current.EndIndex = parser.Index - 4
 			pattern, _ := regexp.Compile(`}}`)
-			expressionSource = parser.ReadUntil(pattern)
+			parameter = parser.ReadUntil(pattern)
 		} else {
 			pattern, _ := regexp.Compile(`}}`)
-			expressionSource = parser.ReadUntil(pattern)
+			parameter = parser.ReadUntil(pattern)
 		}
 
-		expression := ReadExpression(expressionSource)
+		expression := ReadExpression(parameter)
 
 		parser.ReadWithWhitespaceRequired("}}")
 
 		entry := &Entry{
-			StartIndex:       startIndex,
-			EndIndex:         parser.Index - 2,
-			EntryType:        expressionType,
-			Expression:       expression,
-			ExpressionSource: expressionSource,
-			Children:         []*Entry{},
-			Context:          context,
-			Line:             line,
+			StartIndex: startIndex,
+			EndIndex:   parser.Index - 2,
+			EntryType:  expressionType,
+			Expression: expression,
+			Parameter:  parameter,
+			Children:   []*Entry{},
+			Context:    context,
+			Line:       line,
 		}
 
 		if entry.EntryType == "IfBlock" {
@@ -150,19 +158,19 @@ func Mustache(parser *Parser) {
 	} else {
 		regex, _ := regexp.Compile(`}}`)
 
-		expressionSource := parser.ReadUntil(regex)
+		parameter := parser.ReadUntil(regex)
 
-		expression := ReadExpression(expressionSource)
+		expression := ReadExpression(parameter)
 
 		parser.ReadWithWhitespaceRequired("}}")
 
 		parser.Entries[len(parser.Entries)-1].Children = append(parser.Entries[len(parser.Entries)-1].Children, &Entry{
-			StartIndex:       start,
-			EndIndex:         parser.Index,
-			EntryType:        "MustacheTag",
-			Expression:       expression,
-			ExpressionSource: expressionSource,
-			Line:             line,
+			StartIndex: start,
+			EndIndex:   parser.Index,
+			EntryType:  "MustacheTag",
+			Expression: expression,
+			Parameter:  parameter,
+			Line:       line,
 		})
 	}
 }

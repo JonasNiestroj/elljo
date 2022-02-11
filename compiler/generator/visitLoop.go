@@ -63,7 +63,7 @@ func (self *Generator) VisitLoop(children parser.Entry, current *Fragment) *Frag
 				const $name$_fragment = document.createDocumentFragment();`
 	variables = map[string]string{
 		"name":       name,
-		"expression": children.ExpressionSource,
+		"expression": children.Parameter,
 		"target":     current.Target,
 	}
 	createStatement := Statement{
@@ -109,7 +109,7 @@ func (self *Generator) VisitLoop(children parser.Entry, current *Fragment) *Frag
 				$name$_iterations.length = $variableName$.length;`
 
 	variables = map[string]string{
-		"variableName": children.ExpressionSource,
+		"variableName": children.Parameter,
 		"name":         name,
 		"context":      children.Context,
 		"renderer":     renderer,
@@ -133,7 +133,7 @@ func (self *Generator) VisitLoop(children parser.Entry, current *Fragment) *Frag
 		InitStatements:     []Statement{initStatement},
 		UpdateStatments:    []Statement{},
 		TeardownStatements: []Statement{},
-		Counters: FragmentCounter{
+		Counters: &FragmentCounter{
 			Text:    0,
 			Anchor:  0,
 			Element: 0,

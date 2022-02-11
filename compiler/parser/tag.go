@@ -130,10 +130,16 @@ func Tag(parser *Parser) {
 		return
 	}
 
+	entryType := "Element"
+
+	if name == "slot" {
+		entryType = "SlotElement"
+	}
+
 	entry := &Entry{
 		StartIndex: start,
 		EndIndex:   -1,
-		EntryType:  "Element",
+		EntryType:  entryType,
 		Name:       name,
 		Children:   []*Entry{},
 		Attributes: []Attribute{},

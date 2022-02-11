@@ -5,5 +5,5 @@ import (
 )
 
 func (self *SSR) VisitMustache(parser parser.Parser, children parser.Entry) {
-	self.Render += "${Main.data." + children.ExpressionSource + "}"
+	self.Render += "${Main.data." + children.Parameter + "}"
 }
