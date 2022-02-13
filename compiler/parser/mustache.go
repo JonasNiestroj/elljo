@@ -58,7 +58,7 @@ func Mustache(parser *Parser) {
 
 		current.EndIndex = parser.Index
 		length := len(parser.Entries)
-		subtract := 1
+		subtract := 0
 		if ifBlock != nil {
 			if ifBlock.HasElse {
 				subtract++
@@ -108,7 +108,7 @@ func Mustache(parser *Parser) {
 			parser.ReadWhitespace()
 		} else if expressionType == "ElseBlock" {
 			current := parser.Entries[len(parser.Entries)-1]
-			if current.EntryType != "IfBlock" && current.EntryType != "ElseIfBlock" {
+			if (current.EntryType != "IfBlock" && current.EntryType != "ElseIfBlock") || ifBlock == nil {
 				parser.Error("Else is only allowed after an if or elseif block")
 				return
 			}
@@ -127,6 +127,10 @@ func Mustache(parser *Parser) {
 		} else {
 			pattern, _ := regexp.Compile(`}}`)
 			parameter = parser.ReadUntil(pattern)
+		}
+
+		if parameter == "" && expressionType == "SlotBlock" {
+			parser.Error("A slot name needs to be specified")
 		}
 
 		expression := ReadExpression(parameter)

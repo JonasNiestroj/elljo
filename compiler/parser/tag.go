@@ -105,6 +105,10 @@ func ReadAttributes(parser *Parser, entry *Entry) []Attribute {
 		}
 	}
 
+	if entry.EntryType == "SlotElement" && len(attributes) > 1 {
+		parser.Error("Only one name is allowed for the slot tag")
+	}
+
 	return attributes
 }
 
@@ -148,6 +152,26 @@ func Tag(parser *Parser) {
 	}
 
 	entry.Attributes = ReadAttributes(parser, entry)
+
+	if entryType == "SlotElement" {
+		name := ""
+		if len(entry.Attributes) > 0 {
+			name = entry.Attributes[0].Name
+		}
+
+		for _, oldEntry := range parser.Slots {
+			if oldEntry.Name == name {
+				if name != "" {
+					parser.Error("Duplicate slot with the name " + name + " detected")
+				} else {
+					parser.Error("Duplicate default slot detected")
+				}
+
+			}
+		}
+
+		parser.Slots = append(parser.Slots, Slot{Name: name})
+	}
 
 	// Lets initialize an empty ScriptSource to prevent errors with no script tag
 	parser.ScriptSource = ScriptSource{

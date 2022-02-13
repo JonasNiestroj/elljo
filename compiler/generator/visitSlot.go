@@ -3,6 +3,7 @@ package generator
 import (
 	"elljo/compiler/parser"
 	"strconv"
+	"strings"
 )
 
 func (self *Generator) VisitSlot(children parser.Entry, current *Fragment) *Fragment {
@@ -28,7 +29,7 @@ func (self *Generator) VisitSlotAfter(children parser.Entry, current *Fragment) 
 
 	name := current.Name
 
-	if name == "render" {
+	if strings.HasPrefix(name, "render") {
 		current.Counters.Slot++
 		name = "slot_" + strconv.Itoa(current.Counters.Slot)
 

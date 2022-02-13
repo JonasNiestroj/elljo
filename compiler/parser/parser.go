@@ -43,11 +43,16 @@ type StyleSource struct {
 	Id         string
 }
 
+type Slot struct {
+	Name string
+}
+
 type Parser struct {
 	Index              int
 	Template           string
 	FileName           string
 	Entries            []*Entry
+	Slots              []Slot
 	ScriptSource       ScriptSource
 	StyleSource        StyleSource
 	currentLine        int
