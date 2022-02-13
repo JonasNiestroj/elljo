@@ -12,48 +12,50 @@ import (
 func RunService() {
 	scanner := bufio.NewScanner(os.Stdin)
 	output := bufio.NewWriter(os.Stdout)
+
+	message := ""
+
 	for scanner.Scan() {
-		bytes := scanner.Bytes()
-		message := strings.ReplaceAll(string(bytes), "\\n", "\n")
-		if strings.HasPrefix(message, "compile") {
-			fileName := strings.Split(message, " ")[1]
-			var parserInstance = parser.Parser{
-				Index:    0,
-				Template: strings.Replace(message, "compile "+fileName+" ", "", 1),
-				Entries:  []*parser.Entry{},
-				FileName: fileName,
-			}
-			parserInstance.Parse()
+		message += scanner.Text() + "\n"
+	}
 
-			if len(parserInstance.Errors) > 0 {
-				errors, err := json.Marshal(parserInstance.Errors)
-				if err != nil {
-					output.Write([]byte(err.Error()))
-					output.Flush()
-					panic(err)
-				}
-				output.Write(errors)
-				output.Flush()
-				break
-			}
+	if strings.HasPrefix(message, "compile") {
+		fileName := strings.Split(message, " ")[1]
+		var parserInstance = parser.Parser{
+			Index:    0,
+			Template: strings.Replace(message, "compile "+fileName+" ", "", 1),
+			Entries:  []*parser.Entry{},
+			FileName: fileName,
+		}
+		parserInstance.Parse()
 
-			generatorInstance := generator.Generator{
-				FileName: strings.Split(fileName, ".")[0],
-			}
-
-			generated := generatorInstance.Generate(parserInstance, parserInstance.Template)
-
-			outputJson, err := json.Marshal(generated)
-
+		if len(parserInstance.Errors) > 0 {
+			errors, err := json.Marshal(parserInstance.Errors)
 			if err != nil {
 				output.Write([]byte(err.Error()))
 				output.Flush()
 				panic(err)
 			}
-			output.Write(outputJson)
+			output.Write(errors)
 			output.Flush()
-
-			break
+			return
 		}
+
+		generatorInstance := generator.Generator{
+			FileName: strings.Split(fileName, ".")[0],
+		}
+
+		generated := generatorInstance.Generate(parserInstance, parserInstance.Template)
+
+		outputJson, err := json.Marshal(generated)
+
+		if err != nil {
+			output.Write([]byte(err.Error()))
+			output.Flush()
+			panic(err)
+		}
+		output.Write(outputJson)
+		output.Flush()
+
 	}
 }
