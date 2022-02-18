@@ -11,6 +11,8 @@ export default class EllJoComponent {
     this.$propsBindings = {};
     this.$events = {};
     this.$slots = {};
+    this.$slotTargets = {};
+    this.$variablesToUpdate = [];
     this.oldState = {};
     this.updating = false;
 
@@ -74,8 +76,15 @@ export default class EllJoComponent {
     };
   }
 
+  $updateSlot(newSlot, oldSlot) {
+    this.$slots[oldSlot]().teardown();
+    this.$slots[newSlot] = this.$slots[oldSlot];
+    this.$slots[newSlot]().render(this.$slotTargets[newSlot]);
+  }
+
   updateValue(name, func) {
-    currentComponent[name + 'IsDirty'] = true;
+    this.$variablesToUpdate.push(name);
+
     if (this.$propsBindings[name]) {
       for (let i = 0; i < this.$propsBindings[name].length; i++) {
         this[this.$propsBindings[name][i]].$props[name] = func;
@@ -93,6 +102,7 @@ export default class EllJoComponent {
     this.updating = false;
     this.$.mainFragment.update();
     this.oldState = {};
+    this.$variablesToUpdate = [];
   }
 
   queueUpdate() {
@@ -108,6 +118,7 @@ export default class EllJoComponent {
       callbacks[i]();
     }
     this.$.mainFragment.teardown();
+    Object.keys(this.$slots).forEach(slot => slot.teardown());
     this.$.mainFragment = null;
   }
 }

@@ -180,7 +180,7 @@ func (self *Generator) VisitElement(parser parser.Parser, children parser.Entry,
 				}
 				mappings = append(mappings, []int{0, 0, children.Line, 0})
 				createStatement += utils.BuildString(variableCreateStatement, variables)
-				variableUpdateStatementSource := `if(this.$value$IsDirty) {
+				variableUpdateStatementSource := `if(this.$variablesToUpdate.includes($value$)) {
 								$name$.setAttribute("$attributeName$", $value$);
 							}`
 
@@ -280,7 +280,7 @@ func (self *Generator) VisitElementAfter(parser parser.Parser, current *Fragment
 		initStatementSource := "var slots = {"
 
 		for _, slot := range current.Slots {
-			initStatementSource += slot.Slot + ": " + slot.Renderer + ","
+			initStatementSource += "[" + slot.Slot + "]: " + slot.Renderer + ","
 		}
 
 		initStatementSource += "};"

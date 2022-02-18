@@ -13,9 +13,10 @@ func (self *Generator) VisitSlotElement(children parser.Entry, current *Fragment
 	}
 
 	createStatementTemplate := `
-		if(this.$slots.$slotName$) {
+		this.$slotTargets['$slotName$'] = $target$;
+		if(this.$slots['$slotName$']) {
 			var slotFragment = document.createDocumentFragment();
-			this.$slots.$slotName$(slotFragment);
+			this.$slots['$slotName$']().render(slotFragment);
 			$target$.appendChild(slotFragment);
 		}
 	`

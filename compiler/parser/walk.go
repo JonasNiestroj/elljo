@@ -13,12 +13,12 @@ func Walk(entry interface{}, nodeCallback func(entry interface{})) {
 	case *js_ast.SFunction:
 		nodeCallback(entry)
 		for _, stmt := range entry.Fn.Body.Stmts {
-			Walk(stmt, nodeCallback)
+			Walk(stmt.Data, nodeCallback)
 		}
 	case *js_ast.SBlock:
 		nodeCallback(entry)
 		for _, stmt := range entry.Stmts {
-			Walk(stmt, nodeCallback)
+			Walk(stmt.Data, nodeCallback)
 		}
 	case *js_ast.SDoWhile:
 		nodeCallback(entry)
@@ -58,6 +58,10 @@ func Walk(entry interface{}, nodeCallback func(entry interface{})) {
 		for _, decl := range entry.Decls {
 			Walk(decl.ValueOrNil.Data, nodeCallback)
 		}
+	case *js_ast.SIf:
+		nodeCallback(entry)
+		Walk(entry.Yes.Data, nodeCallback)
+		Walk(entry.NoOrNil.Data, nodeCallback)
 	case *js_ast.EBinary:
 		nodeCallback(entry)
 		Walk(entry.Left, nodeCallback)
@@ -74,9 +78,24 @@ func Walk(entry interface{}, nodeCallback func(entry interface{})) {
 		}
 	case *js_ast.EIf:
 		nodeCallback(entry)
-		Walk(entry.Yes, nodeCallback)
-		Walk(entry.No, nodeCallback)
+		Walk(entry.Yes.Data, nodeCallback)
+		Walk(entry.No.Data, nodeCallback)
 	case *js_ast.EIdentifier:
 		nodeCallback(entry)
+	case *js_ast.FnBody:
+		nodeCallback(entry)
+		for _, stmt := range entry.Stmts {
+			Walk(stmt.Data, nodeCallback)
+		}
+	case *js_ast.Finally:
+		nodeCallback(entry)
+		for _, stmt := range entry.Stmts {
+			Walk(stmt.Data, nodeCallback)
+		}
+	case *js_ast.ClassStaticBlock:
+		nodeCallback(entry)
+		for _, stmt := range entry.Stmts {
+			Walk(stmt.Data, nodeCallback)
+		}
 	}
 }

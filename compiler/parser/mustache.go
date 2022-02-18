@@ -58,7 +58,7 @@ func Mustache(parser *Parser) {
 
 		current.EndIndex = parser.Index
 		length := len(parser.Entries)
-		subtract := 0
+		subtract := 1
 		if ifBlock != nil {
 			if ifBlock.HasElse {
 				subtract++
@@ -67,7 +67,9 @@ func Mustache(parser *Parser) {
 		}
 
 		parser.Entries = parser.Entries[:length-subtract]
+
 		ifBlock = nil
+
 	} else if parser.Read("#") {
 		expressionType := ""
 		startIndex := parser.Index

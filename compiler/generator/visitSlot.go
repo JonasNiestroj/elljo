@@ -2,6 +2,7 @@ package generator
 
 import (
 	"elljo/compiler/parser"
+	"elljo/compiler/utils"
 	"strconv"
 	"strings"
 )
@@ -34,7 +35,7 @@ func (self *Generator) VisitSlotAfter(children parser.Entry, current *Fragment) 
 		name = "slot_" + strconv.Itoa(current.Counters.Slot)
 
 		current.Slots = append(current.Slots, SlotEntry{
-			Slot:     "default",
+			Slot:     "'default'",
 			Renderer: "render" + name,
 		})
 	} else {
@@ -44,24 +45,65 @@ func (self *Generator) VisitSlotAfter(children parser.Entry, current *Fragment) 
 		})
 	}
 
-	initStatement := "const render" + name + " = (target) => {"
+	initStatement := `const render$name$ = () => {
+		return {
+			render: (target) => {
+				$slots$
+			},
+			teardown: () => {
+				$teardown$
+			}
+		}
+	}`
+
+	slots := ""
+	teardown := ""
 
 	if len(current.SlotElements) > 0 {
 		for _, entry := range current.SlotElements {
-			initStatement += `
+			slots += `
 				target.appendChild(` + entry + `);`
+
+			teardown += `
+				` + entry + `.parentNode.removeChild(` + entry + `);`
 		}
 
-		initStatement += `
-				return target;
-			}`
+		slots += `
+				return target;`
+	}
+
+	if current.IsComponent && !strings.HasPrefix(name, "render") {
+		if !utils.IsOnlyStringExpression(children.Expression) && children.Parameter != "" {
+			variableUpdateStatementSource := `console.log(this.$variablesToUpdate);if(this.$variablesToUpdate.includes('$value$')) {
+								this['component-$componentIndex$'].$updateSlot($value$, this.oldState["$value$"]); 
+							}`
+
+			variables := map[string]string{
+				"value":          children.Parameter,
+				"componentIndex": strconv.Itoa(self.componentCounter),
+			}
+
+			variableUpdateStatement := Statement{
+				source:   utils.BuildString(variableUpdateStatementSource, variables),
+				mappings: [][]int{{}, {0, 0, children.Line, 0}, {}},
+			}
+
+			current.UpdateStatments = append(current.UpdateStatments, variableUpdateStatement)
+		}
+	}
+
+	variables := map[string]string{
+		"slots":    slots,
+		"teardown": teardown,
+		"name":     name,
 	}
 
 	current.InitStatements = append(current.InitStatements, Statement{
-		source: initStatement,
+		source: utils.BuildString(initStatement, variables),
 		// TODO: Fix source mapping
 		mappings: [][]int{{}},
 	})
 
 	current.Parent.InitStatements = append(current.Parent.InitStatements, current.InitStatements...)
+	current.Parent.UpdateStatments = append(current.Parent.UpdateStatments, current.UpdateStatments...)
 }

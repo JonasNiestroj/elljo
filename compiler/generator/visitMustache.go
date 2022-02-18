@@ -42,7 +42,7 @@ func (self *Generator) VisitMustache(parserInstance parser.Parser, children pars
 	if current.UpdateContextChain != "" {
 		updateStatementTemplate += `if(!$name$_value || $variable$ !== $name$_value) {`
 	} else {
-		updateStatementTemplate += `if((this.$variable$IsDirty || !$name$_value) && $variable$ !== $name$_value) {`
+		updateStatementTemplate += `if((this.$variablesToUpdate.includes($variable$) || !$name$_value) && $variable$ !== $name$_value) {`
 	}
 
 	if len(children.LoopIndices) > 0 {
