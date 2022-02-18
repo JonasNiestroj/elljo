@@ -74,7 +74,7 @@ func (self *Generator) VisitSlotAfter(children parser.Entry, current *Fragment) 
 
 	if current.IsComponent && !strings.HasPrefix(name, "render") {
 		if !utils.IsOnlyStringExpression(children.Expression) && children.Parameter != "" {
-			variableUpdateStatementSource := `console.log(this.$variablesToUpdate);if(this.$variablesToUpdate.includes('$value$')) {
+			variableUpdateStatementSource := `if(this.$variablesToUpdate.includes('$value$')) {
 								this['component-$componentIndex$'].$updateSlot($value$, this.oldState["$value$"]); 
 							}`
 
